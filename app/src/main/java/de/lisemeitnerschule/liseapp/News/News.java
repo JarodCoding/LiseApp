@@ -12,6 +12,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -225,8 +226,10 @@ public class News {
 
             protected static void cache(Context context,News news){
                 FileOutputStream outputStream = null;
+                File file = null;
                 try {
-                    outputStream = context.openFileOutput(news.title.trim()+".news",Context.MODE_PRIVATE);
+                    file = File.createTempFile(news.title.trim(),".news",context.getCacheDir());
+                    outputStream = new FileOutputStream(file);
                     outputStream.write((news.title                  + ":").getBytes());
                     outputStream.write((dateFormat.format(news.date)+ ":").getBytes());
                     outputStream.write((news.pictureName            + ":").getBytes());
@@ -238,7 +241,7 @@ public class News {
                     new Exception("Caching failed for"+news,e);
                     try{
                         outputStream.close();
-                        context.deleteFile(news.title.trim()+".news");
+                        if(file.exists())file.delete();
                     }catch (Exception e1){
                         e1.printStackTrace();
                     }
@@ -246,8 +249,9 @@ public class News {
                 }
             }
 
-            protected static News    getCached(Context context,String fileName){
+            protected static News getCached(Context context,String fileName){
                     FileInputStream inputStream;
+
                     try {
                         inputStream = context.openFileInput(fileName);
                         byte[] buff = new byte[inputStream.available()];
@@ -264,59 +268,81 @@ public class News {
                     }
                     return null;
             }
-            protected static News clearCache(Context context,String fileName){
-                FileInputStream inputStream;
-                try {
-                    inputStream = context.openFileInput(fileName);
-                    byte[] buff = new byte[inputStream.available()];
-                    inputStream.read(buff,0,inputStream.available());
-                    News res = new News();
-                    String[] values = new String(buff).split(":");
-                    res.title       = values[0];
-                    res.pictureName = values[1];
-                    res.teaser      = (Spannable)Html.fromHtml(values[2]);
-                    inputStream.close();
-                    return res;
-                } catch (IOException  e) {
-                    e.printStackTrace();
-                }
-                return null;
+
+            protected static boolean isCached (Context context,String title,boolean validate){
+        FileInputStream inputStream;
+        File file = null;
+
+        try {
+            file = new File(context.getCacheDir(),title);
+            if(!file.exists())return false;
+            inputStream = new FileInputStream(file);
+
+            if(inputStream.available()<2){
+                inputStream.close();
+                file.delete();
+                return false;
             }
 
 
-    protected static boolean isCached (Context context,String fileName,boolean validate){
-                    FileInputStream inputStream;
-
-                    try {
-
-                        inputStream = context.openFileInput(fileName);
-
-                        if(inputStream.available()<2){
-                            inputStream.close();
-                            return false;
-                        }
+            if(validate) {
+                byte[] buff = new byte[inputStream.available()];
+                inputStream.read(buff,0,inputStream.available());
+                String[] values = new String(buff).split(":");
+                if(values.length < 6)return false;
+            }
 
 
-                        if(validate) {
-                            byte[] buff = new byte[inputStream.available()];
-                            inputStream.read(buff,0,inputStream.available());
-                            String[] values = new String(buff).split(":");
-                            if(values.length < 6)return false;
-                        }
+            inputStream.close();
 
+            return true;
+        } catch (IOException  e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
-                        inputStream.close();
+            protected static boolean clearCache(Context context){
 
-                        return true;
-                    } catch (IOException  e) {
-                        e.printStackTrace();
-                    }
+                try {
+                   deleteDir(context.getCacheDir());
+                    return true;
+                } catch (Exception  e) {
+                    e.printStackTrace();
                     return false;
                 }
 
+            }
+
+                private static void deleteDir(File dir) throws Exception{
+                    if (dir.isDirectory()) {
+                        for (String childName:dir.list()) {
+                            try {
+                                deleteDir(new File(dir, childName));
+                            }catch (Exception e){
+                                throw new Exception("Can't delete "+dir+": Error while deleting child "+dir+" "+childName+": ",e);
+                            }
+                        }
+                    }
+                    if(!dir.delete())throw new Exception("Can't delete "+dir);
+
+            }
+
+            public static boolean removeFromCache(Context context,String filename) throws Exception{
+                File f = new File(context.getCacheDir(),filename);
+                return f.delete();
+            }
+            public static boolean removeFromCache(Context context,News news) throws Exception{
+                File f = new File(context.getCacheDir(),news.title.trim()+".news");
+                return f.delete();
+            }
 
 
-        //Tesing
+
+
+
+
+        //Testing
 
             public static void parsingTest(NewsAdapter adapter){
                 parse(adapter,getUnparesDummyNews(adapter.Context));
