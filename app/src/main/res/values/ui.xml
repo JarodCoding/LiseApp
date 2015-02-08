@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <integer name="news_per_site">        0000010 </integer>
+
+</resources>

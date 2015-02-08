@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+
+<div class="news-list-item" xmlns:f="http://www.w3.org/1999/html">
+	<!-- header -->
+	<div class="header">
+		<h3>
+			<!-- date -->
+			<span class="news-list-date">
+				11.01.2015
+			</span>
+
+			<a href="/lise-intern/nachrichten-intern/article/schreibwettbewerb/">
+				Schreibwettbewerb
+			</a>
+		</h3>
+	</div>
+	<!-- teaser text -->
+	
+		<div class="news-img-wrap">
+			<a href="/lise-intern/nachrichten-intern/article/schreibwettbewerb/">
+				
+						
+							
+								<img src="/typo3temp/_processed_/csm_Edward_Hopper_-Automat__1927_9561716900.jpg" width="178" height="141" alt="">
+							
+							
+							
+							
+						
+					
+			</a>
+		</div>
+		
+	<div class="news-list-subheader">
+                
+                                        <p>Liebe Schülerinnen und Schüler der Klassen 7, 8 und 9,
+</p>
+<p>&nbsp;</p>
+<p>ihr seid herzlich eingeladen, beim schulinternen Schreibwettbewerb „Kreatives Schreiben nach einem Bildimpuls“ mitzumachen. (Für weitere Informationen auf den Titel klicken.)
+</p>
+<p>&nbsp;</p>
+                                
+        </div>
+</div>
