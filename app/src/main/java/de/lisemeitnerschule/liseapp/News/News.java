@@ -39,12 +39,8 @@ public class News {
 
     public Drawable  picture;
         public String    pictureName;
-        public int       pictureWidth;
-        public int       pictureHeigth;
             private static       Drawable NullImage         = null; //TODO nullImage
               private static final String NullPictureName   = "NullImage";
-              private static final int    NullPictureWidth  = 00;
-              private static final int    NullPictureHeigth = 00;
 
     public Spannable teaser;
         public String    HTMLteaser;
@@ -91,7 +87,7 @@ public class News {
                             // download the file
                             input = connection.getInputStream();
                             String[] URLParts = url.toString().split("/");
-                            output = adapter.Context.openFileOutput(URLParts[URLParts.length - 1], Context.MODE_PRIVATE);
+                            output = new FileOutputStream(new File(adapter.Context.getCacheDir(),URLParts[URLParts.length - 1]));
 
                             byte data[] = new byte[4096];
                             int count;
@@ -141,8 +137,9 @@ public class News {
                                     }
                                 try{
                                     News tmp;
-                                    if((tmp = getCached(adapter.Context,current.title+".news"))!=null){
+                                    if((tmp = getCached(adapter.Context,current.title))!=null){
                                         current = tmp;
+                                        res.add(tmp);
                                         continue;
                                     }
                                 }catch (Exception e){
@@ -155,8 +152,6 @@ public class News {
                                         downloadImage(pictureUrl);
                                         String[] URLParts     = pictureUrl.split("/");
                                         current.pictureName   = URLParts[URLParts.length-1];
-                                        current.pictureWidth  = Integer.valueOf(element.child(1).child(0).child(0).attr("width"));
-                                        current.pictureHeigth =  Integer.valueOf(element.child(1).child(0).child(0).attr("height"));
                                         current.picture = Drawable.createFromStream(adapter.Context.openFileInput(current.pictureName),current.pictureName);
                                     } catch (Exception e) {
                                         if(e.getMessage().equals("Failed To Download Image: Cancelled"))continue;
@@ -175,8 +170,6 @@ public class News {
                                                     downloadImage(pictureUrl);
                                                     String[] URLParts = pictureUrl.split("/");
                                                     current.pictureName = URLParts[URLParts.length - 1];
-                                                    current.pictureWidth = Integer.valueOf(img.attr("width"));
-                                                    current.pictureHeigth = Integer.valueOf(img.attr("height"));
                                                     current.picture = Drawable.createFromStream(adapter.Context.openFileInput(current.pictureName), current.pictureName);
 
                                                 } catch (Exception e) {
@@ -228,13 +221,11 @@ public class News {
                 FileOutputStream outputStream = null;
                 File file = null;
                 try {
-                    file = File.createTempFile(news.title.trim(),".news",context.getCacheDir());
+                    file = new File(context.getCacheDir(),news.title.trim()+".news");
                     outputStream = new FileOutputStream(file);
-                    outputStream.write((news.title                  + ":").getBytes());
-                    outputStream.write((dateFormat.format(news.date)+ ":").getBytes());
-                    outputStream.write((news.pictureName            + ":").getBytes());
-                    outputStream.write((news.pictureWidth + ":").getBytes());
-                    outputStream.write((news.pictureHeigth          + ":").getBytes());
+                    outputStream.write((news.title                  + "|").getBytes());
+                    outputStream.write((dateFormat.format(news.date)+ "|").getBytes());
+                    outputStream.write((news.pictureName            + "|").getBytes());
                     outputStream.write(news.HTMLteaser                    .getBytes());
                     outputStream.close();
                 } catch (IOException  e) {
@@ -251,22 +242,25 @@ public class News {
 
             protected static News getCached(Context context,String fileName){
                     FileInputStream inputStream;
-
+                    File file;
                     try {
-                        inputStream = context.openFileInput(fileName);
+                        file = new File(context.getCacheDir(),fileName+".news");
+                        inputStream = new FileInputStream(file);
                         byte[] buff = new byte[inputStream.available()];
                         inputStream.read(buff,0,inputStream.available());
                         News res = new News();
-                        String[] values = new String(buff).split(":");
+                        String[] values = new String(buff).split("|");
                         res.title       = values[0];
-                        res.pictureName = values[1];
-                        res.teaser      = (Spannable)Html.fromHtml(values[2]);
+                        res.date       = dateFormat.parse(values[1]);
+                        res.pictureName = values[2];
+                        res.picture = Drawable.createFromStream(context.openFileInput(res.pictureName), res.pictureName);
+                        res.teaser      = (Spannable)Html.fromHtml(values[3]);
                         inputStream.close();
                         return res;
-                    } catch (IOException  e) {
+                    } catch (Exception  e) {
                         e.printStackTrace();
                     }
-                    return null;
+                return null;
             }
 
             protected static boolean isCached (Context context,String title,boolean validate){
@@ -278,7 +272,7 @@ public class News {
             if(!file.exists())return false;
             inputStream = new FileInputStream(file);
 
-            if(inputStream.available()<2){
+            if(inputStream.available()<4){
                 inputStream.close();
                 file.delete();
                 return false;
@@ -288,7 +282,7 @@ public class News {
             if(validate) {
                 byte[] buff = new byte[inputStream.available()];
                 inputStream.read(buff,0,inputStream.available());
-                String[] values = new String(buff).split(":");
+                String[] values = new String(buff).split(";");
                 if(values.length < 6)return false;
             }
 

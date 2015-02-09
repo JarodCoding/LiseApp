@@ -3,15 +3,14 @@
 xmlns:tools="http://schemas.android.com/tools"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
+    android:padding="8dp"
 
 tools:context="de.lisemeitnerschule.liseapp.News.NewsFragment">
-    android:background="@color/White"
 
 <android.support.v7.widget.RecyclerView
     android:id="@+id/cardList"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/White"
 
     />
 

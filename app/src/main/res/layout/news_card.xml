@@ -5,10 +5,9 @@
     android:id="@+id/card_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    card_view:cardCornerRadius="4dp"
-    android:layout_margin="5dp"
-    card_view:cardElevation="100dp"
-    card_view:cardBackgroundColor="@color/LiseBlue"
+    card_view:cardCornerRadius="2dp"
+    card_view:cardElevation="5dp"
+    card_view:cardBackgroundColor="@color/White"
     android:background="?android:selectableItemBackground"
     android:focusable="true"
     android:clickable="true"
@@ -19,63 +18,62 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="5dp"
 
         >
-
-        <TextView
-            android:id="@+id/NewsTitle"
-            android:gravity="center"
+        <RelativeLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/relativelayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="25sp"
-            android:layout_centerInParent="true"
-            android:textColor="@android:color/white"
-            />
+            android:layout_gravity="top"
+            >
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        >
+            <de.lisemeitnerschule.liseapp.Utils.FittingImageView
 
-        <com.makeramen.RoundedImageView
-            xmlns:app="http://schemas.android.com/apk/res-auto"
-            android:id="@+id/NewsPicture"
-            app:riv_corner_radius="15dip"
-            android:padding="3dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:paddingRight="5dp"
-            android:background="@color/LiseBlue" />
+                android:id="@+id/NewsPicture"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                />
+
+            <TextView
+                android:id="@+id/NewsTitle"
+                android:gravity="left"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#50000000"
+                android:textSize="22sp"
+                android:layout_alignLeft="@+id/NewsPicture"
+                android:layout_alignBottom="@+id/NewsPicture"
+                android:padding="16dp"
+                android:textColor="@color/primary_text_default_material_dark"
+
+                />
+        </RelativeLayout>
+
+
 
         <com.bluejamesbond.text.DocumentView xmlns:ext="http://schemas.android.com/apk/res-auto"
             android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
+            android:layout_height="wrap_content"
             android:id="@+id/NewsTeaser"
             ext:documentView_antialias="true"
             ext:documentView_cacheConfig="auto_quality"
             ext:documentView_hyphen="-"
             ext:documentView_lineHeightMultiplier="2.0"
             ext:documentView_maxLines="100"
-            ext:documentView_offsetX="10dp"
-            ext:documentView_offsetY="10dp"
-            ext:documentView_insetPadding="10dp"
-            ext:documentView_insetPaddingBottom="10dp"
-            ext:documentView_insetPaddingLeft="10dp"
-            ext:documentView_insetPaddingRight="10dp"
-            ext:documentView_insetPaddingTop="10dp"
+
             ext:documentView_textAlignment="justified"
-            ext:documentView_textColor="@android:color/white"
+            ext:documentView_textColor="@color/abc_primary_text_material_light"
             ext:documentView_textFormat="formatted"
-            ext:documentView_textSize="12sp"
+            ext:documentView_textSize="14sp"
             ext:documentView_textSubPixel="true"
             ext:documentView_wordSpacingMultiplier="5.0"
+
             android:layout_gravity="left"
-            android:padding="10dp"
+            ext:documentView_insetPadding="16dp"
             />
-    </LinearLayout>
+
     </LinearLayout>
 
 

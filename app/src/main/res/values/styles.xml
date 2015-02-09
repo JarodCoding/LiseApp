@@ -13,8 +13,6 @@
         <!--   Accent Color Special elemts which deserve the users attention-->
         <item name="colorAccent">@color/RedAccent</item>
 
-        <item name="android:colorBackground">@color/White</item>
-
 
 
     </style>
