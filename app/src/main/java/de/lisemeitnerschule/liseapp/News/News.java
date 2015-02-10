@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import de.lisemeitnerschule.liseapp.R;
 import de.lisemeitnerschule.liseapp.Utils.GermanTextUtil;
@@ -74,14 +75,14 @@ public class News {
                         OutputStream output = null;
                         HttpURLConnection connection = null;
                         try {
-                            URL url = new URL("http://www.lise-meitner-schule.de/"+pictureUrl);
+                            URL url = new URL("http://lise-meitner-schule.de/uploads/tx_news/"+pictureUrl);
                             connection = (HttpURLConnection) url.openConnection();
                             connection.connect();
 
                             // expect HTTP 200 OK, so we don't mistakenly save error report
                             // instead of the file
                             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                                throw new HttpResponseException(connection.getResponseCode(), "Failed to retrieve image");
+                                throw new HttpResponseException(connection.getResponseCode(), "Failed to retrieve image: "+url);
                             }
 
                             // download the file
@@ -148,11 +149,34 @@ public class News {
 
                                     //parse The Image
                                     try {
-                                        String pictureUrl = element.child(1).child(0).child(0).attr("src");
-                                        downloadImage(pictureUrl);
-                                        String[] URLParts     = pictureUrl.split("/");
-                                        current.pictureName   = URLParts[URLParts.length-1];
-                                        current.picture = Drawable.createFromStream(adapter.Context.openFileInput(current.pictureName),current.pictureName);
+                                        String temporaryImageUrl    = element.child(1).child(0).child(0).attr("src");
+                                        String temporaryImageName   = temporaryImageUrl.substring(temporaryImageUrl.lastIndexOf("/"));
+                                        if(!temporaryImageUrl.startsWith("/upload/")) {
+                                            String extension = temporaryImageName.substring(temporaryImageName.lastIndexOf(".")+1);
+                                            temporaryImageName = temporaryImageName.substring(0,temporaryImageName.length()-extension.length());
+                                            String[] underLineSaperated = temporaryImageName.split("_");
+                                            StringBuilder pictureNameBuilder = new StringBuilder();
+                                            int i = 1;
+                                            for(String tmp:underLineSaperated){
+
+                                                if(i == underLineSaperated.length){
+                                                    pictureNameBuilder.setCharAt(pictureNameBuilder.length()-1,'.');
+                                                    continue;
+                                                }
+                                                if(i == 1){
+                                                    i++;
+                                                    continue;
+                                                }
+                                                pictureNameBuilder.append(tmp+"_");
+                                                i++;
+                                            }
+                                            pictureNameBuilder.append(extension);
+                                            current.pictureName = pictureNameBuilder.toString();
+                                        }else{
+                                            current.pictureName = temporaryImageName;
+                                        }
+                                        downloadImage(current.pictureName);
+                                        current.picture = Drawable.createFromStream(new FileInputStream(new File(adapter.Context.getCacheDir(),current.pictureName)),current.pictureName);
                                     } catch (Exception e) {
                                         if(e.getMessage().equals("Failed To Download Image: Cancelled"))continue;
                                         new Exception("failed to load Image for: " + current.title,e).printStackTrace();
@@ -164,7 +188,7 @@ public class News {
                                     try {
                                         Element teaser = element.child(2);
                                         for (Element img : teaser.getElementsByTag("img")) {
-                                            if(current.pictureName != null) {
+                                            if(current.pictureName == null) {
                                                 try {
                                                     String pictureUrl = img.attr("src");
                                                     downloadImage(pictureUrl);
@@ -249,11 +273,11 @@ public class News {
                         byte[] buff = new byte[inputStream.available()];
                         inputStream.read(buff,0,inputStream.available());
                         News res = new News();
-                        String[] values = new String(buff).split("|");
+                        String[] values = new String(buff).split(Pattern.quote("|"));
                         res.title       = values[0];
                         res.date       = dateFormat.parse(values[1]);
                         res.pictureName = values[2];
-                        res.picture = Drawable.createFromStream(context.openFileInput(res.pictureName), res.pictureName);
+                        res.picture = Drawable.createFromStream(new FileInputStream(new File(context.getCacheDir(), res.pictureName)), res.pictureName);
                         res.teaser      = (Spannable)Html.fromHtml(values[3]);
                         inputStream.close();
                         return res;
