@@ -27,5 +27,4 @@ dependencies {
     compile 'com.makeramen:roundedimageview:1.5.0'
     compile 'org.jsoup:jsoup:1.7.2'
     compile 'com.github.bluejamesbond:textjustify-android:2.1.0'
-    compile files('Z:/coding/LiseApp/lib/OAuth.jar')
 }
