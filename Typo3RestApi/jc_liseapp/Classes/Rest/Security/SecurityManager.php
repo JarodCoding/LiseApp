@@ -15,7 +15,7 @@ class SecurityManager extends \OAuthDataStore {
 	protected static $instance;
 	protected static $timestamp_threshold= 300; // in seconds: five minutes
 
-
+	public $username;
 	
 	function lookup_consumer($consumer_key) {
 		$passwordHash = UserAdapter::getInstance()->getPassword($consumer_key);
@@ -99,8 +99,10 @@ class SecurityManager extends \OAuthDataStore {
 				$_SERVER['REQUEST_URI'];
 				$http_method = ($http_method) ? $http_method : $_SERVER['REQUEST_METHOD'];
 				$OAuthRequest = new \OAuthRequest($http_method,$http_url,\OAuthUtil::split_header($OAuthHeader));
+			
 			//Verify Request
 				self::getServerInstance()->verify_request($OAuthRequest);
+				$this->username = $OAuthRequest->get_parameter("oauth_consumer_key");
 		} catch (Exception $e) {
 			return $e;
 		}

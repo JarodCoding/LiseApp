@@ -33,7 +33,7 @@
 namespace JarodCoding\JcLiseapp\Rest;
 require_once '/Security/SecurityManager.php';
 require_once  '/DataInterfaces/UserAdapter.php';
-
+require_once  '/DataInterfaces/NewsAdapter.php';
 use Bullet\App;
 use Cundd\Rest\Dispatcher;
 use Cundd\Rest\HandlerInterface;
@@ -41,6 +41,8 @@ use Cundd\Rest\Request;
 use LiseAppServer\Managers;
 use LiseAppServer\DataInterface;
 use LiseAppServer\Managers\SecurityManager;
+use LiseAppServer\DataInterface\UserAdapter;
+use LiseAppServer\DataInterface\NewsAdapter;
 
 /**
  * Example handler
@@ -99,6 +101,27 @@ class Handler implements HandlerInterface {
 				};
 
 				$app->post($loginCallback);
+			});
+			$app->path('news', function($request) use ($handler, $app) {
+				
+				$GetNews = function ($request) use ($handler, $app) {
+					try{
+						$err = SecurityManager::getInstance()->securityCheck();
+					}catch(\Exception $e){
+						$err = $e;
+					}
+					if($err != null)return $app->response(401, "Auto Authentication Error: ".$err);
+					
+					try{
+						return NewsAdapter::getInstance()->listAllReadable(SecurityManager::getInstance()->username);
+					}catch(\Exception $e){
+						$err = $e;
+					}
+					if($err != null)return $app->response(401, "Error: ".$err);
+						
+				};
+			
+				$app->get($GetNews);
 			});
 			$app->path('test', function($request) use ($handler, $app) {
 						
