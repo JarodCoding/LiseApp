@@ -1,17 +1,21 @@
 package de.lisemeitnerschule.liseapp;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.transition.ChangeBounds;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import de.lisemeitnerschule.liseapp.News.NewsFragment;
 
@@ -29,9 +33,14 @@ public class MenuActivity extends ActionBarActivity
      * Used to store the last screen title. For use in {@link #restoreActionBar()}.
      */
     private CharSequence mTitle;
-
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    protected void setupAnimations(){
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+        getWindow().setSharedElementEnterTransition(new ChangeBounds());
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        setupAnimations();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_menu);
 
@@ -103,10 +112,10 @@ public class MenuActivity extends ActionBarActivity
 
         return super.onOptionsItemSelected(item);
     }
-    public static Fragment open(int sectionNumber) {
+    public Fragment open(int sectionNumber) {
         Fragment fragment;
         switch (sectionNumber){
-            case 1 : fragment = (Fragment) NewsFragment.newInstance();
+            case 1 : fragment = (Fragment) NewsFragment.newInstance(this);
                 break;
             default: fragment = PlaceholderFragment.newInstance(sectionNumber);
         }

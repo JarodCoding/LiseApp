@@ -16,6 +16,7 @@
 
 package de.lisemeitnerschule.liseapp.News;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
@@ -36,23 +37,20 @@ public class NewsFragment extends Fragment {
 
 
 
-    public static NewsFragment newInstance() {
+    public static NewsFragment newInstance(Activity activity) {
 
         NewsFragment fragment = new NewsFragment();
         fragment.setRetainInstance(true);
+        fragment.activity = activity;
         return fragment;
     }
 
-    public NewsFragment() {
-        // Required empty public constructor
-    }
 
+    public Activity activity;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
     }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -72,9 +70,9 @@ public class NewsFragment extends Fragment {
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recList.setLayoutManager(llm);
 
-        NewsAdapter na = new NewsAdapter(new ArrayList<News>(),view.getContext());
+        NewsAdapter na = new NewsAdapter(new ArrayList<News>(),activity);
         recList.setAdapter(na);
-        News.parsingTest(na);
+
     }
 }
 

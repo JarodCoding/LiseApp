@@ -2,12 +2,17 @@ package de.lisemeitnerschule.liseapp;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.transition.ChangeBounds;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -25,13 +30,6 @@ import de.lisemeitnerschule.liseapp.Network.Session;
 public class Login extends Activity {
 
     /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
-    private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "paskuts", "paskuts"
-    };
-    /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private UserLoginTask mAuthTask = null;
@@ -45,6 +43,13 @@ public class Login extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setupAnimations();
+        new Session(getApplicationContext());
+        if(Session.instance!=null){
+            Intent intend = new Intent(this,MenuActivity.class);
+            startActivity(intend);
+            return;
+        }
         setContentView(R.layout.login);
 
         // Set up the login form.
@@ -73,7 +78,11 @@ public class Login extends Activity {
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
     }
-
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    protected void setupAnimations(){
+        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
+        getWindow().setSharedElementEnterTransition(new ChangeBounds());
+    }
 
 
     /**
@@ -112,7 +121,7 @@ public class Login extends Activity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(username, password);
+            mAuthTask = new UserLoginTask(username, password,this);
             mAuthTask.execute((Void) null);
         }
     }
@@ -161,16 +170,19 @@ public class Login extends Activity {
 
         private final String mUsername;
         private final String mPassword;
+        private final Login parent;
 
-        UserLoginTask(String username, String password) {
+        UserLoginTask(String username, String password,Login parent) {
             mUsername = username;
             mPassword = password;
+            this.parent = parent;
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
             try {
-                boolean res = (Session.instance = new Session(mUsername,mPassword))!= null;
+                new Session(mUsername,mPassword,getApplicationContext());
+                boolean res = Session.instance!=null;
                 if(res){
                     JSONObject json = Session.instance.apiRequest("test");
                     System.err.println(json.getString("Result"));
@@ -190,6 +202,8 @@ public class Login extends Activity {
             showProgress(false);
 
             if (success) {
+                Intent intend = new Intent(parent,MenuActivity.class);
+                startActivity(intend);
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));

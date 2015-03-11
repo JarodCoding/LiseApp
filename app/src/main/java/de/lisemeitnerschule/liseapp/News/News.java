@@ -7,7 +7,12 @@ import android.text.Html;
 import android.text.Spannable;
 import android.text.SpannableString;
 
+import com.bluejamesbond.text.style.JustifiedSpan;
+
 import org.apache.http.client.HttpResponseException;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -22,21 +27,26 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import de.lisemeitnerschule.liseapp.R;
-import de.lisemeitnerschule.liseapp.Utils.GermanTextUtil;
+import de.lisemeitnerschule.liseapp.Constants;
+import de.lisemeitnerschule.liseapp.Network.Session;
 
 /**
  * Created by Pascal on 4.2.15.
  */
 public class News {
+    public static    List<News> NewsList;
     public String    title;
 
     public Date date;
         private static final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyy");
+
+    public String   author;
+
 
     public Drawable  picture;
         public String    pictureName;
@@ -44,7 +54,11 @@ public class News {
               private static final String NullPictureName   = "NullImage";
 
     public Spannable teaser;
-        public String    HTMLteaser;
+        public String rawTeaser;
+
+    public Spannable text;
+        public String rawText;
+
 
     @Override
     public String toString() {
@@ -57,181 +71,189 @@ public class News {
 
         //parsing
 
-            public static final void parse(NewsAdapter adapter,Element... unparsedNews){
+            public static final void parse(NewsAdapter adapter,JSONArray unparsedNews){
                 ParseTask tmp = new ParseTask(adapter);
                 tmp.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, unparsedNews);
             }
+            public static final void parse(NewsAdapter adapter,JSONObject object) throws JSONException {
+                parse(adapter,object.toJSONArray(object.names()));
+            }
+            public static final void parseAllNews(NewsAdapter adapter) throws Exception {
+                GETTask tmp = new GETTask(adapter);
+                tmp.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, null);
+            }
+    protected static class GETTask extends AsyncTask<String, Integer, List<News>> {
+                private final NewsAdapter adapter;
+                public GETTask( NewsAdapter adapter) {
+                    this.adapter = adapter;
+                }
+                @Override
+                protected List<News> doInBackground(String... params) {
+                    JSONArray arr = null;
+                    try {
+                        JSONObject object = Session.instance.apiRequest("news");
+                        arr = object.toJSONArray(object.names());
 
-            private static class ParseTask extends AsyncTask<Element, Integer, List<News>> {
+
+                    } catch (Exception e) {
+                        new Exception("Failed to retrieve News: ",e).printStackTrace();
+                    }
+                    if(arr == null)return null;
+                    return ParseTask.parse(arr,this,adapter);
+                }
+                @Override
+                protected void onPostExecute(List<News> news) {
+                    if(news == null||news.size()==0)return;
+                    NewsList.clear();
+                    for(News current:news){
+                        NewsList.add(current);
+                        adapter.notifyItemInserted(adapter.getItemCount()-1);
+                    }
+                }
+            }
+            protected static class ParseTask extends AsyncTask<JSONArray, Integer, List<News>> {
                     private static String html_backspace = new String(new byte[]{-62,-96});
 
-                    NewsAdapter adapter;
+                    private final NewsAdapter adapter;
                     public ParseTask( NewsAdapter adapter) {
                         this.adapter = adapter;
                     }
 
-                    protected void downloadImage(String pictureUrl) throws Exception {
-                        InputStream input = null;
-                        OutputStream output = null;
-                        HttpURLConnection connection = null;
-                        try {
-                            URL url = new URL("http://lise-meitner-schule.de/uploads/tx_news/"+pictureUrl);
-                            connection = (HttpURLConnection) url.openConnection();
-                            connection.connect();
-
-                            // expect HTTP 200 OK, so we don't mistakenly save error report
-                            // instead of the file
-                            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                                throw new HttpResponseException(connection.getResponseCode(), "Failed to retrieve image: "+url);
-                            }
-
-                            // download the file
-                            input = connection.getInputStream();
-                            String[] URLParts = url.toString().split("/");
-                            output = new FileOutputStream(new File(adapter.Context.getCacheDir(),URLParts[URLParts.length - 1]));
-
-                            byte data[] = new byte[4096];
-                            int count;
-                            while ((count = input.read(data)) != -1) {
-                                // allow canceling with back button
-                                if (isCancelled()) {
-                                    input.close();
-                                    throw  new Exception("Failed To Download Image: Cancelled");
-                                }
-                                output.write(data, 0, count);
-                            }
-
-                        } catch (Exception e) {
-                            throw new Exception("Failed to download Image", e);
-                        } finally {
-                            try {
-                                if (output != null)
-                                    output.close();
-                                if (input != null)
-                                    input.close();
-                            } catch (IOException ignored) {
-                            }
-
-                            if (connection != null)
-                                connection.disconnect();
-                        }
-                    }
                     @Override
-                    protected List<News> doInBackground(Element... parameters) {
-                        List<News> res = new ArrayList<News>();
-                        for(Element element:parameters) {
-                            if (isCancelled())return res;
-
-
+                    protected List<News> doInBackground(JSONArray... newsList) {
+                        return parse(newsList[0],this,adapter);
+                    }
+                        protected static List<News> parse(JSONArray newsList,AsyncTask task,NewsAdapter adapter){
+                            List<News> res = new ArrayList<News>();
                             try {
+                                JSONObject currentRawNews = null;
+                                News       currentNews    = null;
+                                for(int i = 0;i < newsList.length();i++){
+                                    try {
+                                        currentRawNews = newsList.getJSONObject(i);
+                                        currentNews = new News();
+                                        //title
+                                        currentNews.title = currentRawNews.getString("title");
 
-                                News current = new News();
+                                        //date
+                                        Calendar date = Calendar.getInstance();
+                                        date.setTimeInMillis(currentRawNews.getLong("datetime") * 1000);
+                                        currentNews.date = date.getTime();
+
+                                        //author
+                                        currentNews.author = currentRawNews.getString("author");
+
+                                        //image
+                                        String image = currentRawNews.getString("image");
+                                        downloadImage(image,task,adapter);
+                                        currentNews.pictureName = image.substring(image.lastIndexOf("/"));
+                                        currentNews.picture = Drawable.createFromStream(new FileInputStream(new File(adapter.Context.getCacheDir(), currentNews.pictureName)), currentNews.pictureName);
+
+                                        //teaser
+                                        parseTeaser(currentNews, currentRawNews.getString("teaser"));
+
+                                        //text
+                                        parseText(currentNews, currentRawNews.getString("bodytext"),task,adapter);
 
 
-                                 // parse the Header
-                                 try {
-                                       Element header = element.child(0).child(0);
-                                       current.date = dateFormat.parse(header.child(0).ownText());
-                                       current.title = header.child(1).ownText();
-                                    } catch (Exception e) {
-                                        throw new Exception("failed to parse Header! aborting", e);
+                                        res.add(currentNews);
+                                   //   cache(adapter.Context, currentNews);  TODO: caching restriction
+                                    }catch(Exception e){
+                                        throw new Exception("Failed to parse News "+(currentNews!=null?currentNews.title:"")+"from "+(currentRawNews!=null?currentRawNews:""),e);
                                     }
-                                try{
-                                    News tmp;
-                                    if((tmp = getCached(adapter.Context,current.title))!=null){
-                                        current = tmp;
-                                        res.add(tmp);
-                                        continue;
-                                    }
-                                }catch (Exception e){
+                                }
+                            } catch (Exception e) {
+                                new Exception("Failed to receive News: ",e).printStackTrace();
+                            }
+                            return res;
+                        }
+                        protected static void downloadImage(String pictureUrl,AsyncTask task,NewsAdapter adapter) throws Exception {
+                            InputStream input = null;
+                            OutputStream output = null;
+                            HttpURLConnection connection = null;
+                            try {
+                                URL url = new URL(Constants.URL+pictureUrl);
+                                connection = (HttpURLConnection) url.openConnection();
+                                connection.connect();
 
+                                // expect HTTP 200 OK, so we don't mistakenly save error report
+                                // instead of the file
+                                if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                                    throw new HttpResponseException(connection.getResponseCode(), "Failed to retrieve image: "+url);
                                 }
 
-                                    //parse The Image
-                                    try {
-                                        String temporaryImageUrl    = element.child(1).child(0).child(0).attr("src");
-                                        String temporaryImageName   = temporaryImageUrl.substring(temporaryImageUrl.lastIndexOf("/"));
-                                        if(!temporaryImageUrl.startsWith("/upload/")) {
-                                            String extension = temporaryImageName.substring(temporaryImageName.lastIndexOf(".")+1);
-                                            temporaryImageName = temporaryImageName.substring(0,temporaryImageName.length()-extension.length());
-                                            String[] underLineSaperated = temporaryImageName.split("_");
-                                            StringBuilder pictureNameBuilder = new StringBuilder();
-                                            int i = 1;
-                                            for(String tmp:underLineSaperated){
+                                // download the file
+                                input = connection.getInputStream();
+                                output = new FileOutputStream(new File(adapter.Context.getCacheDir(),url.toString().substring(url.toString().lastIndexOf("/"))));
 
-                                                if(i == underLineSaperated.length){
-                                                    pictureNameBuilder.setCharAt(pictureNameBuilder.length()-1,'.');
-                                                    continue;
-                                                }
-                                                if(i == 1){
-                                                    i++;
-                                                    continue;
-                                                }
-                                                pictureNameBuilder.append(tmp+"_");
-                                                i++;
-                                            }
-                                            pictureNameBuilder.append(extension);
-                                            current.pictureName = pictureNameBuilder.toString();
-                                        }else{
-                                            current.pictureName = temporaryImageName;
-                                        }
-                                        downloadImage(current.pictureName);
-                                        current.picture = Drawable.createFromStream(new FileInputStream(new File(adapter.Context.getCacheDir(),current.pictureName)),current.pictureName);
-                                    } catch (Exception e) {
-                                        if(e.getMessage().equals("Failed To Download Image: Cancelled"))continue;
-                                        new Exception("failed to load Image for: " + current.title,e).printStackTrace();
-
+                                byte data[] = new byte[4096];
+                                int count;
+                                while ((count = input.read(data)) != -1) {
+                                    // allow canceling with back button
+                                    if (task!=null&&task.isCancelled()) {
+                                        input.close();
+                                        throw  new Exception("Failed To Download Image: Cancelled");
                                     }
+                                    output.write(data, 0, count);
+                                }
 
+                            } catch (Exception e) {
+                                throw new Exception("Failed to download Image", e);
+                            } finally {
+                                try {
+                                    if (output != null)
+                                        output.close();
+                                    if (input != null)
+                                        input.close();
+                                } catch (IOException ignored) {
+                                }
 
-                                    //parse Teaser
-                                    try {
-                                        Element teaser = element.child(2);
-                                        for (Element img : teaser.getElementsByTag("img")) {
-                                            if(current.pictureName == null) {
-                                                try {
-                                                    String pictureUrl = img.attr("src");
-                                                    downloadImage(pictureUrl);
-                                                    String[] URLParts = pictureUrl.split("/");
-                                                    current.pictureName = URLParts[URLParts.length - 1];
-                                                    current.picture = Drawable.createFromStream(adapter.Context.openFileInput(current.pictureName), current.pictureName);
-
-                                                } catch (Exception e) {
-                                                    if (e.getMessage().equals("Failed To Download Image: Cancelled"))
-                                                        continue;
-                                                    new Exception("failed to load Image for: " + current.title, e).printStackTrace();
-
-                                                }
-                                            }
-                                            img.remove();
-                                        }
-                                        for(Element backspace: teaser.getElementsMatchingOwnText(html_backspace)){
-                                            backspace.remove();
-                                        }
-                                        String html = teaser.html();
-                                        html = html.replace(GermanTextUtil.encodeHTML("(Für weitere Informationen auf den Titel klicken.)"),"");
-                                        html = html.replace(GermanTextUtil.encodeHTML("(Für weitere Informationen auf den Titel klicken)" ),"");
-                                        html = html.replace(GermanTextUtil.encodeHTML(" Für weitere Informationen auf den Titel klicken"  ),"");
-
-                                        current.teaser = (Spannable)Html.fromHtml(html);
-                                        current.HTMLteaser = html;
-                                        cache(adapter.Context,current);
-                                    }catch (Exception e){
-                                        new Exception("Failed to parse Teaser: "+element.nodeName(),e).printStackTrace();
-                                    }
-                                cache(adapter.Context,current);
-                                    res.add(current);
-                            }catch (Exception e){
-                                new Exception("Failed to parse News: "+element,e).printStackTrace();
+                                if (connection != null)
+                                    connection.disconnect();
                             }
                         }
-                        return res;
-                    }
+                        protected static void parseTeaser(News target,String source){
+                            source = source.replace("(Für weitere Informationen auf den Titel klicken.)", "");
+                            source = source.replace("(Für weitere Informationen auf den Titel klicken)", "");
+                            source = source.replace(" Für weitere Informationen auf den Titel klicken.", "");
+                            source = source.replace(" Für weitere Informationen auf den Titel klicken", "");
+                            source = source.replace("(Auf die Überschrift klicken.)", "");
+                            source = source.replace("(Auf die Überschrift klicken)", "");
+                            source = source.replace("Auf die Überschrift klicken.", "");
+                            source = source.replace("Auf die Überschrift klicken", "");
+
+                            target.teaser = new SpannableString(source);
+                            target.teaser.setSpan(new JustifiedSpan(), 0, target.teaser.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+                            target.rawTeaser = source;
+                        }
+                        protected static void parseText(News target,String source,AsyncTask task,NewsAdapter adapter) throws Exception {
+                            try {
+                                Document teaser = Jsoup.parse(source);
+                                for (Element img : teaser.getElementsByTag("img")) {
+                                    if (target.pictureName == null) {
+                                        String temporaryImageUrl = img.attr("src");
+                                        target.pictureName = temporaryImageUrl.substring(temporaryImageUrl.lastIndexOf("/"));
+                                        downloadImage(temporaryImageUrl,task,adapter);
+                                        target.picture = Drawable.createFromStream(adapter.Context.openFileInput(target.pictureName), target.pictureName);
+                                    }
+                                    img.remove();
+                                }
+                                for (Element backspace : teaser.getElementsMatchingOwnText(html_backspace)) {
+                                    backspace.remove();
+                                }
+                                target.text = (Spannable) Html.fromHtml(teaser.html());
+                                target.text.setSpan(new JustifiedSpan(), 0, target.text.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+                                target.rawTeaser = teaser.html();
+                            } catch (Exception e) {
+                                throw new Exception("Failed to parse Body from News: " + target.title, e);
+                            }
+                        }
+
 
                     @Override
                     protected void onPostExecute(List<News> news) {
                         for(News current:news){
-                            adapter.NewsList.add(current);
+                            NewsList.add(current);
                             adapter.notifyItemInserted(adapter.getItemCount()-1);
                         }
                     }
@@ -239,7 +261,8 @@ public class News {
 
 
 
-        //Caching
+
+    //Caching
 
             protected static void cache(Context context,News news){
                 FileOutputStream outputStream = null;
@@ -247,10 +270,13 @@ public class News {
                 try {
                     file = new File(context.getCacheDir(),news.title.trim()+".news");
                     outputStream = new FileOutputStream(file);
-                    outputStream.write((news.title                  + "|").getBytes());
-                    outputStream.write((dateFormat.format(news.date)+ "|").getBytes());
-                    outputStream.write((news.pictureName            + "|").getBytes());
-                    outputStream.write(news.HTMLteaser                    .getBytes());
+                    outputStream.write((news.title+" "                  + "|").getBytes());
+                    outputStream.write((dateFormat.format(news.date) + " " + "|").getBytes());
+                    outputStream.write((news.author+" "                 + "|").getBytes());
+                    outputStream.write((news.pictureName+" "            + "|").getBytes());
+                    outputStream.write((news.rawTeaser+" "              + "|").getBytes());
+                    outputStream.write((news.rawText + " ").getBytes());
+
                     outputStream.close();
                 } catch (IOException  e) {
                     new Exception("Caching failed for"+news,e);
@@ -275,10 +301,15 @@ public class News {
                         News res = new News();
                         String[] values = new String(buff).split(Pattern.quote("|"));
                         res.title       = values[0];
-                        res.date       = dateFormat.parse(values[1]);
-                        res.pictureName = values[2];
-                        res.picture = Drawable.createFromStream(new FileInputStream(new File(context.getCacheDir(), res.pictureName)), res.pictureName);
-                        res.teaser      = (Spannable)Html.fromHtml(values[3]);
+                        res.date        = dateFormat.parse(values[1]);
+                        res.author      = values[3];
+                        res.pictureName = values[4];
+                        res.picture     = Drawable.createFromStream(new FileInputStream(new File(context.getCacheDir(), res.pictureName)), res.pictureName);
+                        res.teaser      = new SpannableString(values[5]);
+                        res.text        = (Spannable) Html.fromHtml(values[6]);
+                        res.teaser.setSpan(new JustifiedSpan(), 0, res.teaser.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+                        res.text  .setSpan(new JustifiedSpan(), 0, res.text.length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+
                         inputStream.close();
                         return res;
                     } catch (Exception  e) {
@@ -288,37 +319,37 @@ public class News {
             }
 
             protected static boolean isCached (Context context,String title,boolean validate){
-        FileInputStream inputStream;
-        File file = null;
+                FileInputStream inputStream;
+                File file = null;
 
-        try {
-            file = new File(context.getCacheDir(),title);
-            if(!file.exists())return false;
-            inputStream = new FileInputStream(file);
+                try {
+                    file = new File(context.getCacheDir(),title);
+                    if(!file.exists())return false;
+                    inputStream = new FileInputStream(file);
 
-            if(inputStream.available()<4){
-                inputStream.close();
-                file.delete();
+                    if(inputStream.available()<4){
+                        inputStream.close();
+                        file.delete();
+                        return false;
+                    }
+
+
+                    if(validate) {
+                        byte[] buff = new byte[inputStream.available()];
+                        inputStream.read(buff,0,inputStream.available());
+                        String[] values = new String(buff).split("|");
+                        if(values.length < 6)return false;
+                    }
+
+
+                    inputStream.close();
+
+                    return true;
+                } catch (IOException  e) {
+                    e.printStackTrace();
+                }
                 return false;
             }
-
-
-            if(validate) {
-                byte[] buff = new byte[inputStream.available()];
-                inputStream.read(buff,0,inputStream.available());
-                String[] values = new String(buff).split(";");
-                if(values.length < 6)return false;
-            }
-
-
-            inputStream.close();
-
-            return true;
-        } catch (IOException  e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
             protected static boolean clearCache(Context context){
 
@@ -355,37 +386,4 @@ public class News {
                 return f.delete();
             }
 
-
-
-
-
-
-        //Testing
-
-            public static void parsingTest(NewsAdapter adapter){
-                parse(adapter,getUnparesDummyNews(adapter.Context));
-            }
-
-                public static Element getUnparesDummyNews(Context context){
-                    InputStream inputStream;
-                    try {
-                        inputStream = context.getResources().openRawResource(R.raw.dummy);
-                        Document doc = Jsoup.parse(inputStream,"UTF-8","lisemeitnerschule.de");
-                        return doc.getElementsByClass("news-list-item").first();
-                    } catch (IOException  e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }
-
-                public static News getDummyNews(Context context)
-                {
-                    News res = new News();
-                    res.title        = "Title";
-                    res.pictureName  = "android_vs_ios";
-                    res.picture      = context.getResources().getDrawable(R.drawable.android_vs_ios);
-                    res.teaser       = new SpannableString("teaser");
-                    return res;
-
-                }
     }

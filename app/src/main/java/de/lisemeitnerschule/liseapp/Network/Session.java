@@ -1,12 +1,17 @@
 package de.lisemeitnerschule.liseapp.Network;
 
+import android.content.Context;
 import android.util.Base64;
 
 import com.google.gdata.util.common.base.PercentEscaper;
 
 import org.json.JSONObject;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -26,17 +31,36 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
+import de.lisemeitnerschule.liseapp.Constants;
+
 
 public class Session {
     public static Session instance = null;
-    public static final String baseUrl = "http://78.35.149.100:1610/rest/LiseApp/";
+    public static final String baseUrl = Constants.URL+"/rest/LiseApp/";
 
         public final String  SecretHash;
         public final String  username  ;
     private static final PercentEscaper percentEscaper = new PercentEscaper("-._~", false);
-	public Session(String username,String password) throws Exception{
-        //TODO save Session and load
-       //retrive the Hash/login
+    public Session(Context context){
+        String username;
+        String SecretHash;
+        try {
+            DataInputStream cacheReader = new DataInputStream(new FileInputStream(new File(context.getCacheDir(),"login")));
+            username = cacheReader.readUTF();
+            SecretHash = cacheReader.readUTF();
+            cacheReader.close();
+            instance = this;
+        } catch (Exception e) {
+            new Exception("Failed to login from Cache: ",e).printStackTrace();
+            instance = null;
+            username = null;
+            SecretHash = null;
+        }
+        this.username = username;
+        this.SecretHash = SecretHash;
+
+    }
+	public Session(String username,String password,Context context) throws Exception{
         HttpURLConnection connection ;
         try {
             //prepare the Login Data
@@ -70,6 +94,11 @@ public class Session {
             connection.getInputStream().read(buff);
             this.username = username;
             SecretHash = percentEscaper.escape(new String(buff));
+            DataOutputStream cacheWriter = new DataOutputStream(new FileOutputStream(new File(context.getCacheDir(),"login")));
+            cacheWriter.writeUTF(username);
+            cacheWriter.writeUTF(SecretHash);
+            cacheWriter.close();
+            instance = this;
         } catch (Exception e) {
             instance = null;
             e.printStackTrace();
@@ -86,6 +115,7 @@ public class Session {
     private static final HashMap<String,ApiFuction> knownFunctions = new HashMap<String,ApiFuction>();
         static{
             knownFunctions.put("test",new ApiFuction("test")); //Just to test the Autoauthentication. This is a GET request which returns 'Hello World' when the Authentication Header is correct.
+            knownFunctions.put("news",new ApiFuction("news")); //Returns an JSON string with all relavant News for the specifyed user
 
         }
 
@@ -161,7 +191,7 @@ public class Session {
         return connection;
     }
     public String generateOAuthHeader(HttpURLConnection connection) throws IOException, URISyntaxException {
-        String res = "realm=\""+connection.getURL().toURI().toString()+"\","+
+        String res = "realm=\""+connection.getURL().toString()+"\","+
                 "oauth_consumer_key=\""+username+"\","+
                 "oauth_token=\"\","+
                 "oauth_signature_method=\"HMAC-SHA1\","+
@@ -171,15 +201,16 @@ public class Session {
                 "oauth_version=\"1.0\"";
         connection.setRequestProperty("Authorization",res);
         String signatur = generateOAuthSignatur(connection);
-        System.err.println(signatur);
-        res = res.replace("oauth_signature=\"\",","oauth_signature=\""+signatur+"\",\"");
+        res = res.replace("oauth_signature=\"\",","oauth_signature=\""+signatur+"\",");
+
         connection.setRequestProperty("Authorization",res);
         return res;
     }
     public String generateOAuthSignatur(HttpURLConnection connection) throws IOException, URISyntaxException {
         byte[] keyBytes;
         try {
-            keyBytes = (SecretHash+"&").getBytes("UTF-8");
+            String key = ((SecretHash)+'&');
+            keyBytes = key.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
             //Should never happen
             e.printStackTrace();
@@ -211,9 +242,10 @@ public class Session {
             e.printStackTrace();
             return null;
         }
-        System.err.println(new String(text));
         byte[] HmacSHA1encoded = mac.doFinal(text);
-        return  Base64.encodeToString(HmacSHA1encoded,Base64.DEFAULT).trim();
+        String signatur =  percentEscaper.escape(Base64.encodeToString(HmacSHA1encoded, Base64.DEFAULT).trim());
+        System.err.println(signatur);
+        return signatur;
     }
 /*
  * Copyright (c) 2009 Matthias Kaeppler Licensed under the Apache License,
@@ -322,7 +354,6 @@ class ApiFuction{
         HttpURLConnection connection = Session.instance.createSecuredConnection(Session.baseUrl+name);
         configureConnection(connection);
         Session.instance.generateOAuthHeader(connection);
-        System.err.println(connection.getRequestProperties());
         connect(connection);
         byte[] buff;
         if(connection.getResponseCode()!=200){
@@ -333,7 +364,7 @@ class ApiFuction{
         buff = new byte[connection.getContentLength()];
         connection.getInputStream().read(buff);
         String json = new String(buff);
-        JSONObject data = new JSONObject(json);
+        JSONObject data = new JSONObject(json.substring(json.indexOf('{')));
         connection.disconnect();
         return data;
     }
