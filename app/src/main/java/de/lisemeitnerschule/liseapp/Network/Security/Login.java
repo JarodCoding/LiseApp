@@ -1,59 +1,57 @@
-package de.lisemeitnerschule.liseapp;
+package de.lisemeitnerschule.liseapp.Network.Security;
 
+import android.accounts.Account;
+import android.accounts.AccountAuthenticatorResponse;
+import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.transition.ChangeBounds;
+import android.support.v7.app.ActionBarActivity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.Window;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import org.json.JSONObject;
-
 import de.lisemeitnerschule.liseapp.Network.Session;
+import de.lisemeitnerschule.liseapp.R;
 
 
 /**
  * A login screen that offers login via email/password.
  */
-public class Login extends Activity {
-
+public class Login extends ActionBarActivity {
+    public static final String PARAM_ACCOUNT_TYPE = "ACCOUNT_TYPE";
+    public static final String PARAM_ACCOUNT_CREATE = "ACCOUNT_CREATE";
+    public static final String PARAM_ACCOUNT_NAME = "ACCOUNT_NAME";
+    public static final String PARAM_AUTHTOKEN_TYPE = "AUTHTOKEN_TYPE";
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private UserLoginTask mAuthTask = null;
 
     // UI references.
-    private AutoCompleteTextView mUsernameView;
-    private EditText mPasswordView;
-    private View mProgressView;
-    private View mLoginFormView;
+    private EditText mUsernameView  ;
+    private EditText mPasswordView  ;
+    private View     mProgressView  ;
+    private View     mLoginFormView ;
+    private String   AccountType    ;
+    private boolean  CreateNew      ;
+    private String   AuthTokenType  ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setupAnimations();
-        new Session(getApplicationContext());
-        if(Session.instance!=null){
-            Intent intend = new Intent(this,MenuActivity.class);
-            startActivity(intend);
-            return;
-        }
+        sync_onCreate(savedInstanceState);
+
         setContentView(R.layout.login);
 
         // Set up the login form.
-        mUsernameView = (AutoCompleteTextView) findViewById(R.id.username);
+        mUsernameView = (EditText) findViewById(R.id.username);
 
         mPasswordView = (EditText) findViewById(R.id.password);
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
@@ -74,14 +72,17 @@ public class Login extends Activity {
                 attemptLogin();
             }
         });
-
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-    }
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    protected void setupAnimations(){
-        getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
-        getWindow().setSharedElementEnterTransition(new ChangeBounds());
+
+
+        AccountType = getIntent().getStringExtra(PARAM_ACCOUNT_TYPE);
+        CreateNew = getIntent().getBooleanExtra(PARAM_ACCOUNT_CREATE,true);
+            if(!CreateNew){
+                mUsernameView.setText(getIntent().getStringExtra(PARAM_ACCOUNT_NAME));
+                setTitle(R.string.modify_title);
+            }
+        AuthTokenType = getIntent().getStringExtra(PARAM_AUTHTOKEN_TYPE);
     }
 
 
@@ -132,9 +133,7 @@ public class Login extends Activity {
      * Shows the progress UI and hides the login form.
      */
     public void showProgress(final boolean show) {
-        // On Honeycomb MR2 we have the ViewPropertyAnimator APIs, which allow
-        // for very easy animations. If available, use these APIs to fade-in
-        // the progress spinner.
+
             int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
             mLoginFormView.setVisibility(show ? View.GONE : View.VISIBLE);
@@ -156,6 +155,34 @@ public class Login extends Activity {
             });
     }
 
+    // Android Sync Stuff
+                private AccountAuthenticatorResponse mAccountAuthenticatorResponse = null;
+                private Bundle mResultBundle = null;
+                public void finish() {
+                    if (mAccountAuthenticatorResponse != null) {
+                        // send the result bundle back if set, otherwise send an error.
+                        if (mResultBundle != null) {
+                            mAccountAuthenticatorResponse.onResult(mResultBundle);
+                        } else {
+                            mAccountAuthenticatorResponse.onError(AccountManager.ERROR_CODE_CANCELED,
+                                    "canceled");
+                        }
+                        mAccountAuthenticatorResponse = null;
+                    }
+                    super.finish();
+                }
+                protected void sync_onCreate(Bundle icicle) {
+
+                    mAccountAuthenticatorResponse =
+                            getIntent().getParcelableExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE);
+
+                    if (mAccountAuthenticatorResponse != null) {
+                        mAccountAuthenticatorResponse.onRequestContinued();
+                    }
+                }
+                public final void setAccountAuthenticatorResult(Bundle result) {
+                    mResultBundle = result;
+                }
 
 
 
@@ -166,7 +193,7 @@ public class Login extends Activity {
      * Represents an asynchronous login/registration task used to authenticate
      * the user.
      */
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    public class UserLoginTask extends AsyncTask<Void, Void, Intent> {
 
         private final String mUsername;
         private final String mPassword;
@@ -179,31 +206,43 @@ public class Login extends Activity {
         }
 
         @Override
-        protected Boolean doInBackground(Void... params) {
+        protected Intent doInBackground(Void... params) {
+            String SecretHash = null;
             try {
-                new Session(mUsername,mPassword,getApplicationContext());
-                boolean res = Session.instance!=null;
-                if(res){
-                    JSONObject json = Session.instance.apiRequest("test");
-                    System.err.println(json.getString("Result"));
 
-                }
-                return res;
+                SecretHash = Session.login(mUsername,mPassword);
             } catch (Exception e) {
                 e.printStackTrace();
-                return false;
+                return null;
             }
+            final Intent res = new Intent();
+            res.putExtra(AccountManager.KEY_ACCOUNT_NAME, mUsername);
+            res.putExtra(AccountManager.KEY_ACCOUNT_TYPE, AccountType);
+            res.putExtra(AccountManager.KEY_AUTHTOKEN, SecretHash);
+            return res;
 
         }
 
         @Override
-        protected void onPostExecute(final Boolean success) {
+        protected void onPostExecute(final Intent res) {
             mAuthTask = null;
             showProgress(false);
 
-            if (success) {
-                Intent intend = new Intent(parent,MenuActivity.class);
-                startActivity(intend);
+            if (res!=null) {
+                AccountManager manager = AccountManager.get(getApplicationContext());
+
+                //account Info
+                    String accountName       = res.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)                           ;
+                    String authtoken         = res.getStringExtra(AccountManager.KEY_AUTHTOKEN)                              ;
+                    final Account account    = new Account(accountName, res.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)) ;
+
+                if(CreateNew){
+                    manager.addAccountExplicitly(account, authtoken, null);
+                }else{
+                    manager.setPassword(account,authtoken);
+                }
+                setAccountAuthenticatorResult(res.getExtras());
+                setResult(RESULT_OK, res);
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));

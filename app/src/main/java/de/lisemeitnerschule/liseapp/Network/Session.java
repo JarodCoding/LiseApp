@@ -1,17 +1,14 @@
 package de.lisemeitnerschule.liseapp.Network;
 
-import android.content.Context;
 import android.util.Base64;
 
 import com.google.gdata.util.common.base.PercentEscaper;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
@@ -31,45 +28,43 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.lisemeitnerschule.liseapp.Constants;
+import de.lisemeitnerschule.liseapp.LiseApp;
 
 
 public class Session {
-    public static Session instance = null;
-    public static final String baseUrl = Constants.URL+"/rest/LiseApp/";
+    private static HashMap<String,Session> sessions = new HashMap<String,Session>();
+    public static Session instance(String username,String SecretHash) throws Exception {
+        if(sessions.containsKey(SecretHash)){
+            return sessions.get(username);
+        }else {
+            Session res = new Session(username,SecretHash);
+            sessions.put(username,res);
+            return res;
+        }
+    }
+    public static Session instance(String username)  {
+        try {
+            return sessions.get(username);
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public static final String baseUrl = LiseApp.URL+"/rest/LiseApp/";
 
         public final String  SecretHash;
         public final String  username  ;
     private static final PercentEscaper percentEscaper = new PercentEscaper("-._~", false);
-    public Session(Context context){
-        String username;
-        String SecretHash;
-        try {
-            DataInputStream cacheReader = new DataInputStream(new FileInputStream(new File(context.getCacheDir(),"login")));
-            username = cacheReader.readUTF();
-            SecretHash = cacheReader.readUTF();
-            cacheReader.close();
-            instance = this;
-        } catch (Exception e) {
-            new Exception("Failed to login from Cache: ",e).printStackTrace();
-            instance = null;
-            username = null;
-            SecretHash = null;
-        }
-        this.username = username;
-        this.SecretHash = SecretHash;
-
-    }
-	public Session(String username,String password,Context context) throws Exception{
+    public static String login(String username,String password) throws Exception {
         HttpURLConnection connection ;
         try {
             //prepare the Login Data
             JSONObject data = new JSONObject();
-                data.put("username",username);
-                data.put("password",password);
-                data.put("nonce",generateNonce());
-                data.put("timestamp",System.currentTimeMillis() / 1000L);
-                String dataString = data.toString();
+            data.put("username",username);
+            data.put("password",password);
+            data.put("nonce",generateNonce());
+            data.put("timestamp",System.currentTimeMillis() / 1000L);
+            String dataString = data.toString();
 
             connection = (HttpURLConnection) new URL(baseUrl+"login").openConnection();
             connection.setDoInput(true);
@@ -92,21 +87,21 @@ public class Session {
             }
             byte[] buff = new byte[connection.getContentLength()];
             connection.getInputStream().read(buff);
-            this.username = username;
-            SecretHash = percentEscaper.escape(new String(buff));
-            DataOutputStream cacheWriter = new DataOutputStream(new FileOutputStream(new File(context.getCacheDir(),"login")));
-            cacheWriter.writeUTF(username);
-            cacheWriter.writeUTF(SecretHash);
-            cacheWriter.close();
-            instance = this;
+            return percentEscaper.escape(new String(buff));
         } catch (Exception e) {
-            instance = null;
-            e.printStackTrace();
-            throw new Exception("failed to Login with as: "+username,e);
+            throw new Exception("failed to Login as: "+username,e);
         }
+    }
+    public Session(String username,String SecretHash) throws Exception {
 
-
-	}
+        try {
+            this.username = username;
+            this.SecretHash = percentEscaper.escape(SecretHash);
+            apiRequest("test");
+        }catch (Exception e){
+            throw new Exception("Failed to authenticate as "+username,e);
+        }
+    }
 
 
 
@@ -115,34 +110,46 @@ public class Session {
     private static final HashMap<String,ApiFuction> knownFunctions = new HashMap<String,ApiFuction>();
         static{
             knownFunctions.put("test",new ApiFuction("test")); //Just to test the Autoauthentication. This is a GET request which returns 'Hello World' when the Authentication Header is correct.
-            knownFunctions.put("news",new ApiFuction("news")); //Returns an JSON string with all relavant News for the specifyed user
+            knownFunctions.put("news",new ApiPostFuction("news",new String[]{"timestamp"})); //Returns an JSON string with all relevant News for the specified user
 
         }
 
 
 
-    public JSONObject apiRequest(ApiFuction function,JSONObject json) throws Exception {
+    public JSONObject apiRequest(ApiFuction function,JSONObject data) throws Exception {
         //POST API call;
-        ((ApiPostFuction)function).setData(json);
-        return function.execute();
+        ((ApiPostFuction)function).setData(data);
+        return function.execute(this);
     }
-    public JSONObject apiRequest(String function,JSONObject json) throws Exception {
+    public JSONObject apiRequest(String function,JSONObject data) throws Exception {
         //POST API call;
-        return apiRequest(knownFunctions.get(function), json);
+        return apiRequest(knownFunctions.get(function), data);
     }
-
-    public JSONObject apiRequest(String function,String params) throws Exception {
-        //GET API call;
-        return apiRequest(function);
+    public JSONObject apiRequest(ApiFuction function,JSONArray data) throws Exception {
+        //POST API call;
+        ((ApiPostFuction)function).setData(data);
+        return function.execute(this);
     }
-
+    public JSONObject apiRequest(String function,JSONArray data) throws Exception {
+        //POST API call;
+        return apiRequest(knownFunctions.get(function), data);
+    }
+    public JSONObject apiRequest(ApiFuction function,String[] data) throws Exception {
+        //POST API call;
+        ((ApiPostFuction)function).setData(data);
+        return function.execute(this);
+    }
+    public JSONObject apiRequest(String function,String[] data) throws Exception {
+        //POST API call;
+        return apiRequest(knownFunctions.get(function), data);
+    }
     public JSONObject apiRequest(String function) throws Exception {
         //GET API call;
         return apiRequest(knownFunctions.get(function));
     }
     public JSONObject apiRequest(ApiFuction function) throws Exception {
         //GET API call;
-        return function.execute();
+        return function.execute(this);
     }
 
 
@@ -350,10 +357,10 @@ class ApiFuction{
     public ApiFuction(String name){
         this.name = name;
     }
-    public JSONObject execute() throws Exception {
-        HttpURLConnection connection = Session.instance.createSecuredConnection(Session.baseUrl+name);
+    public JSONObject execute(Session session) throws Exception {
+        HttpURLConnection connection = session.createSecuredConnection(Session.baseUrl+name);
         configureConnection(connection);
-        Session.instance.generateOAuthHeader(connection);
+        session.generateOAuthHeader(connection);
         connect(connection);
         byte[] buff;
         if(connection.getResponseCode()!=200){
@@ -377,8 +384,8 @@ class ApiFuction{
     }
 }
 class ApiPostFuction extends  ApiFuction{
-    protected final String[] names;
-    public ApiPostFuction(String ApiFunction,String[] names){
+    protected final String[]  names;
+    public ApiPostFuction(String ApiFunction,String[] names) {
         super(ApiFunction);
         this.names = names;
     }
@@ -400,5 +407,22 @@ class ApiPostFuction extends  ApiFuction{
     public void setData(JSONObject data){
         this.data = data.toString();
 
+    }
+    public void setData(JSONArray data) throws JSONException {
+        JSONArray array = new JSONArray();
+        array.put(Arrays.copyOf(names,data.length()));
+        if(data.length()!= names.length){
+            this.data = data.toJSONObject(array).toString();
+        }
+        array.put(names);
+        this.data = data.toJSONObject(array).toString();
+    }
+    public void setData(String[] data) throws JSONException {
+        JSONObject res = new JSONObject();
+        for(int i = 0;data.length<i;i++){
+            if(data[i]==null||data[i].isEmpty())continue;
+            res. put(names[i], data[i]);
+        }
+        this.data = res.toString();
     }
 }

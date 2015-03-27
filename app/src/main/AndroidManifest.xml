@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="de.lisemeitnerschule.liseapp" >
 
+    <uses-permission android:name="android.permission.USE_CREDENTIALS"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS"/>
+
+    <!-- Authenticator -->
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -10,24 +16,40 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/LiseTheme" >
+
         <activity
-            android:name=".Login"
-            android:label="@string/app_name"
-            android:windowSoftInputMode="adjustResize|stateVisible" >
+            android:name=".MenuActivity"
+            android:label="@string/title_activity_menu" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
-            android:name=".MenuActivity"
-            android:label="@string/title_activity_menu" >
+            android:name=".Network.Security.Login"
+            android:label="@string/login_title"
+            android:windowSoftInputMode="adjustResize|stateVisible" >
+
         </activity>
-        <activity
-            android:name=".News.News_Detail_Page"
-            android:label="@string/title_activity_news__detail__page" >
-        </activity>
+
+        <service android:name=".Network.Security.AuthenticationService">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+        <provider
+            android:name=".Internal.InternalContentProvider"
+            android:authorities="de.lisemeitnerschule.liseapp.Internal.InternalContentProvider"
+            android:exported="false"
+            android:grantUriPermissions="true"
+            android:label="InternalContentProvider"
+            android:readPermission="de.lisemeitnerschule.liseapp.Internal.InternalContentProvider.READ"
+            android:writePermission="de.lisemeitnerschule.liseapp.Internal.InternalContentProvider.WRITE" />
+
     </application>
 
 </manifest>

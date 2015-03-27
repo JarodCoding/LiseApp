@@ -1,4 +1,4 @@
-package de.lisemeitnerschule.liseapp.News;
+package de.lisemeitnerschule.liseapp.Internal.News;
 
 
 import android.annotation.TargetApi;
@@ -21,7 +21,6 @@ import java.util.List;
 import de.lisemeitnerschule.liseapp.R;
 
 
-
 public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder> {
 
     public NewsAdapter(List<News> NewsList,Activity parent) {
@@ -34,7 +33,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     @Override
     public void onAttachedToRecyclerView(RecyclerView recyclerView) {
         try {
-            News.parseAllNews(this);
+            News.retriveNews(this, false);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -68,7 +67,7 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
 
             @Override
             public void onClick(View v) {
-                News_Detail_Page detail_page = News_Detail_Page.newInstance(parent.Activity,News.NewsList.get(newsIndex));
+                News_Detail_Page detail_page = News_Detail_Page.newInstance(parent.Activity, News.NewsList.get(newsIndex));
                 FragmentManager fragmentManager = ((ActionBarActivity)parent.Activity).getSupportFragmentManager();
                 fragmentManager.beginTransaction()
                         .replace(R.id.container, detail_page)

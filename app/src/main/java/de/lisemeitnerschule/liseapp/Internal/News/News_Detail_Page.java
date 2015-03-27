@@ -1,4 +1,4 @@
-package de.lisemeitnerschule.liseapp.News;
+package de.lisemeitnerschule.liseapp.Internal.News;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -44,7 +44,7 @@ public class News_Detail_Page extends android.support.v4.app.Fragment {
             Title.setText(news.title);
         ImageView Picture = (ImageView)newView.findViewById(R.id.NewsPicture);
             Picture.setImageDrawable(news.picture);
-        DocumentView Teaser = (com.bluejamesbond.text.DocumentView) newView.findViewById(R.id.NewsTeaser);
+        DocumentView Teaser = (DocumentView) newView.findViewById(R.id.NewsTeaser);
             Teaser.setText(news.teaser);
         view.addView(newView);
         return view;

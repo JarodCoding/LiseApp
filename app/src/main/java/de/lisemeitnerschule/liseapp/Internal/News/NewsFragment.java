@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-package de.lisemeitnerschule.liseapp.News;
+package de.lisemeitnerschule.liseapp.Internal.News;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -28,7 +28,6 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 
 import de.lisemeitnerschule.liseapp.R;
-
 
 
 public class NewsFragment extends Fragment {
