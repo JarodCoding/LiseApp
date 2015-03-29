@@ -21,6 +21,7 @@ public class Authenticator extends AbstractAccountAuthenticator {
         super(context);
         this.context = context;
     }
+    public static final String accountType = "de.lisemeitnerschule.liseapp.Network.Security.Authenticator";
 
     @Override
     public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
@@ -29,15 +30,20 @@ public class Authenticator extends AbstractAccountAuthenticator {
 
     @Override
     public Bundle addAccount(AccountAuthenticatorResponse response, String accountType, String authTokenType, String[] requiredFeatures, Bundle options) throws NetworkErrorException {
-        final Intent intent = new Intent(context, Login.class);
-        intent.putExtra(Login.PARAM_ACCOUNT_CREATE, true);
-        intent.putExtra(Login.PARAM_ACCOUNT_TYPE, accountType);
-        intent.putExtra(Login.PARAM_AUTHTOKEN_TYPE, authTokenType);
+        final Intent intent = addAccount(context);
         intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
 
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);
         return bundle;
+    }
+    public static Intent addAccount(Context context) {
+        final Intent intent = new Intent(context, Login.class);
+        intent.putExtra(Login.PARAM_ACCOUNT_CREATE, true);
+        intent.putExtra(Login.PARAM_ACCOUNT_TYPE, accountType);
+        intent.putExtra(Login.PARAM_AUTHTOKEN_TYPE, "");
+
+        return intent;
     }
 
     @Override

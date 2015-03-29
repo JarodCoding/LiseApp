@@ -28,14 +28,16 @@ public class InternalDatabaseHelper extends SQLiteOpenHelper {
 
         private static final String SQL_CREATE
             = "create table "+TBL_NEWS+"("     +
-                InternalContract.News._ID      + "INT     PRIMARY KEY NOT NULL,"+
-                InternalContract.News.Date     + "INT                 NOT NULL,"+
-                InternalContract.News.Endtime  + "INT                 NOT NULL,"+
-                InternalContract.News.Title    + "VARCHAR             NOT NULL,"+
-                InternalContract.News.Teaser   + "VARCHAR             NOT NULL,"+
-                InternalContract.News.Text     + "VARCHAR             NOT NULL,"+
-                InternalContract.News.Category + "VARCHAR                     ,"+
-                InternalContract.News.Image    + "VARCHAR                      "+
+                InternalContract.News._ID      + " INT     PRIMARY KEY NOT NULL,"+
+                InternalContract.News.Date     + " INT                 NOT NULL,"+
+                InternalContract.News.Endtime  + " INT                 NOT NULL,"+
+                InternalContract.News.Title    + " VARCHAR             NOT NULL,"+
+                InternalContract.News.Teaser   + " VARCHAR             NOT NULL,"+
+                InternalContract.News.Text     + " VARCHAR             NOT NULL,"+
+                InternalContract.News.Categorys+ " VARCHAR                     ,"+
+                InternalContract.News.Image    + " VARCHAR                     ,"+
+                InternalContract.News.User     + " VARCHAR                      "+
+
                 ");";
 
     @Override

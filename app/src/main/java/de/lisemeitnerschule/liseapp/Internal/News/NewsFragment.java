@@ -69,7 +69,7 @@ public class NewsFragment extends Fragment {
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recList.setLayoutManager(llm);
 
-        NewsAdapter na = new NewsAdapter(new ArrayList<News>(),activity);
+        NewsAdapter na = new NewsAdapter(activity);
         recList.setAdapter(na);
 
     }

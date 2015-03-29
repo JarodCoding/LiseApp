@@ -60,7 +60,7 @@ public class InternalContract {
         public static final String[] PROJECTION_ALL =
                 {_ID, Title, Date,Teaser,Text,Image,Categorys,Endtime,User};
         public static final String SORT_ORDER_DEFAULT =
-                Date + " DSC";
+                Date + " DESC";
 
 
 

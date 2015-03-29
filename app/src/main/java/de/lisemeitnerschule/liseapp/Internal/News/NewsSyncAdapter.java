@@ -2,15 +2,21 @@ package de.lisemeitnerschule.liseapp.Internal.News;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SyncResult;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.NotificationCompat;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
@@ -29,10 +35,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.Network.Session;
-import de.lisemeitnerschule.liseapp.Utilitys;
+import de.lisemeitnerschule.liseapp.R;
+import de.lisemeitnerschule.liseapp.Utilities;
 
 /**
  * Created by Pascal on 23.3.15.
@@ -79,34 +89,89 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                         values.put(InternalContract.News.User       ,account.name                   );
 
                     provider.insert(InternalContract.News.CONTENT_URI,values);
+                    notify(values,getContext());
+
                 }else{
                     provider.delete(Uri.withAppendedPath(InternalContract.News.CONTENT_URI,current.getString("uid")),"1=1",new String[]{});
                 }
             }
             provider.delete(InternalContract.News.CONTENT_URI,"InternalContract.News.Endtime <= ?",new String[]{""+System.currentTimeMillis()/1000});
+            updateLastUpdated();
         } catch (Exception e){
-
+            e.printStackTrace();
         }
         //TODO: DETECT CHANGES VS NEW;
-        //TODO: PUSH NOTIFICATIONS   ;
 
     }
-    private static Long lastUpdated    = 0L;
-    private static File LastUpdatedFile;
+    //Notifications
+    public static void notify(final ContentValues values, final Context context){
+        NotificationCompat.Builder build = new NotificationCompat.Builder(context);
+            //info
+                //image
+                    Bitmap   icon = null;
+                    try {
+                        try {
+                            icon = new AsyncTask<Void, Void, Bitmap>() {
+                                @Override
+                                protected Bitmap doInBackground(Void... params) {
+                                    try {
+                                        return Picasso.with(context).load(values.getAsString(InternalContract.News.Image))
+                                                .resize(200, 200)
+                                                .placeholder(R.drawable.ic_drawer)
+                                                .error(R.drawable.ic_drawer)
+                                                .get();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    return null;
+                                }
+                            }.execute().get(1500, TimeUnit.MILLISECONDS);
+                        } catch (ExecutionException e) {
+                            e.printStackTrace();
+                        } catch (TimeoutException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    if(icon != null) {
+                        build.setLargeIcon(icon);
+                    }else{
+                        build.setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.drawable.ic_drawer));
+                    }
+                //title
+                    build.setContentTitle(values.getAsString(InternalContract.News.Title));
+                //Teaser
+                    build.setContentText(values.getAsString(InternalContract.News.Teaser));
 
+            //Behavior
+                //Click
+                Intent resultIntent = new Intent(context, News_Detail_Page.class);
+
+                PendingIntent resultPendingIntent =
+                        PendingIntent.getActivity(
+                                context,
+                                0,
+                                resultIntent,
+                                PendingIntent.FLAG_UPDATE_CURRENT
+                        );
+                build.setContentIntent(resultPendingIntent);
+        NotificationManager notficaitonManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        notficaitonManager.notify(1, build.build());
+    }
     //retriving
 
-
         //Last Updated
+
+                private static Long lastUpdated    = 0L;
+                private static File LastUpdatedFile;
             public long getLastUpdated(){
                 if(lastUpdated > 0L)return lastUpdated;
                 try {
                     FileInputStream  inputStream = new FileInputStream(LastUpdatedFile);
                     lastUpdated = new DataInputStream(inputStream).readLong();
                     inputStream.close();
-                } catch (FileNotFoundException e1) {
-                    //should never happen
-                    e1.printStackTrace();
                 } catch (IOException e1) {
                     //should never happen
 
@@ -116,7 +181,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
             }
 
             public void updateLastUpdated(){
-                lastUpdated = Utilitys.generateTimeStamp();
+                lastUpdated = Utilities.generateTimeStamp();
                 try {
                     FileOutputStream outputStream = new FileOutputStream(LastUpdatedFile);
                     new DataOutputStream(outputStream).writeLong(lastUpdated);

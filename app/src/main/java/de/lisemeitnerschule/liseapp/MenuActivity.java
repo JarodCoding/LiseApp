@@ -1,9 +1,16 @@
 package de.lisemeitnerschule.liseapp;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ContentProvider;
+import android.content.ContentProviderClient;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
@@ -17,7 +24,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 
-import de.lisemeitnerschule.liseapp.News.NewsFragment;
+import de.lisemeitnerschule.liseapp.Internal.InternalContract;
+import de.lisemeitnerschule.liseapp.Internal.News.NewsFragment;
+import de.lisemeitnerschule.liseapp.Network.Security.Authenticator;
 
 
 public class MenuActivity extends ActionBarActivity
@@ -38,6 +47,53 @@ public class MenuActivity extends ActionBarActivity
         getWindow().requestFeature(Window.FEATURE_CONTENT_TRANSITIONS);
         getWindow().setSharedElementEnterTransition(new ChangeBounds());
     }
+    public static void syncManually(Context context){
+        Account[] accounts = AccountManager.get(context).getAccountsByType(Authenticator.accountType);
+
+        for(Account current:accounts){
+             try{
+                 ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
+            }catch (Exception e){
+                 e.printStackTrace();
+            }
+        }
+    }
+    public static void syncManually(Context context,Account account){
+        try{
+            ContentResolver.requestSync(account, InternalContract.AUTHORITY, new Bundle());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+    public void setupSync(){
+        Account[] accounts;
+        ContentProviderClient InterContentProviderClient = getContentResolver().acquireContentProviderClient(InternalContract.CONTENT_URI);
+
+        if((accounts = AccountManager.get(this).getAccountsByType(Authenticator.accountType)).length == 0) {
+           //create a new Account if none exists
+           startActivity(Authenticator.addAccount(this));
+        }
+        for(Account current:accounts){
+            ContentResolver.setSyncAutomatically(current, InternalContract.AUTHORITY, true);
+            try {
+                if(InterContentProviderClient.query(InternalContract.News.CONTENT_URI,new String[]{InternalContract.News._ID},"",null,InternalContract.News.SORT_ORDER_DEFAULT).getCount()==0){
+                    try{
+                        ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
+                    }catch (Exception e){
+                        e.printStackTrace();
+
+                    }
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                try{
+                    ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
+                }catch (Exception e1){
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setupAnimations();
@@ -52,6 +108,7 @@ public class MenuActivity extends ActionBarActivity
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+        setupSync();
     }
 
     @Override
@@ -115,7 +172,7 @@ public class MenuActivity extends ActionBarActivity
     public Fragment open(int sectionNumber) {
         Fragment fragment;
         switch (sectionNumber){
-            case 1 : fragment = (Fragment) NewsFragment.newInstance(this);
+            case 1 : fragment = NewsFragment.newInstance(this);
                 break;
             default: fragment = PlaceholderFragment.newInstance(sectionNumber);
         }
@@ -150,8 +207,7 @@ public class MenuActivity extends ActionBarActivity
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_menu, container, false);
-            return rootView;
+            return inflater.inflate(R.layout.fragment_menu, container, false);
         }
 
         @Override
