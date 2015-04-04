@@ -96,7 +96,7 @@ public class Session {
 
         try {
             this.username = username;
-            this.SecretHash = percentEscaper.escape(SecretHash);
+            this.SecretHash = SecretHash;
             apiRequest("test");
         }catch (Exception e){
             throw new Exception("Failed to authenticate as "+username,e);
@@ -371,7 +371,12 @@ class ApiFuction{
         buff = new byte[connection.getContentLength()];
         connection.getInputStream().read(buff);
         String json = new String(buff);
-        JSONObject data = new JSONObject(json.substring(json.indexOf('{')));
+        JSONObject data = null;
+        try {
+            data = new JSONObject(json.substring(json.indexOf('{')));
+        }catch(Exception e){
+            throw new Exception("Failed to parse json form message: "+json);
+        }
         connection.disconnect();
         return data;
     }

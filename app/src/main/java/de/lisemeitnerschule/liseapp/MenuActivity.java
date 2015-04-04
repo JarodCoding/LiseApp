@@ -4,7 +4,6 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.ContentProvider;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -74,6 +73,8 @@ public class MenuActivity extends ActionBarActivity
            startActivity(Authenticator.addAccount(this));
         }
         for(Account current:accounts){
+            ContentResolver.setMasterSyncAutomatically(true);
+            ContentResolver.setIsSyncable(current, InternalContract.AUTHORITY, 1);
             ContentResolver.setSyncAutomatically(current, InternalContract.AUTHORITY, true);
             try {
                 if(InterContentProviderClient.query(InternalContract.News.CONTENT_URI,new String[]{InternalContract.News._ID},"",null,InternalContract.News.SORT_ORDER_DEFAULT).getCount()==0){

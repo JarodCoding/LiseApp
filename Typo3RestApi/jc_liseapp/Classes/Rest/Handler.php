@@ -105,6 +105,8 @@ class Handler implements HandlerInterface {
 			$app->path('news', function($request) use ($handler, $app) {
 				
 				$GetNews = function ($request) use ($handler, $app) {
+					$dispatcher = Dispatcher::getSharedDispatcher();
+					$data = $dispatcher->getSentData();
 					try{
 						$err = SecurityManager::getInstance()->securityCheck();
 					}catch(\Exception $e){
@@ -113,6 +115,9 @@ class Handler implements HandlerInterface {
 					if($err != null)return $app->response(401, "Auto Authentication Error: ".$err);
 					
 					try{
+						if(isset($data['timestamp']) && $data['timestamp'] > 0){
+							return NewsAdapter::getInstance()->listAllReadable(SecurityManager::getInstance()->username,$data['timestamp']);
+						}
 						return NewsAdapter::getInstance()->listAllReadable(SecurityManager::getInstance()->username);
 					}catch(\Exception $e){
 						$err = $e;
@@ -121,7 +126,7 @@ class Handler implements HandlerInterface {
 						
 				};
 			
-				$app->get($GetNews);
+				$app->post($GetNews);
 			});
 			$app->path('test', function($request) use ($handler, $app) {
 						

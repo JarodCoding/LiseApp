@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 public class InternalDatabaseHelper extends SQLiteOpenHelper {
     //General Information
-        public static final int DATABASE_VERSION = 1;
+        public static final int DATABASE_VERSION = 2;
         public static final String DATABASE_NAME = "LiseInternal.db";
 
 
@@ -36,7 +36,9 @@ public class InternalDatabaseHelper extends SQLiteOpenHelper {
                 InternalContract.News.Text     + " VARCHAR             NOT NULL,"+
                 InternalContract.News.Categorys+ " VARCHAR                     ,"+
                 InternalContract.News.Image    + " VARCHAR                     ,"+
-                InternalContract.News.User     + " VARCHAR                      "+
+                InternalContract.News.User     + " VARCHAR                     ,"+
+                InternalContract.News.Author   + " VARCHAR                      "+
+
 
                 ");";
 

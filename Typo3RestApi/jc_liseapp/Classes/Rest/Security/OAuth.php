@@ -85,23 +85,27 @@ abstract class OAuthSignatureMethod {
    */
   public function check_signature($request, $consumer, $token, $signature) {
     $built = $this->build_signature($request, $consumer, $token);
-
     // Check for zero length, although unlikely here
     if (strlen($built) == 0 || strlen($signature) == 0) {
+    	throw new Exception("Signatur check failed : 0 string length: ".$built.":".$signature);
       return false;
     }
 
     if (strlen($built) != strlen($signature)) {
+    	throw new Exception("Signatur check failed : Different String length: ".$built.":".$signature);
+    	    	 
       return false;
     }
 
-    // Avoid a timing leak with a (hopefully) time insensitive compare
+    //  Avoid a timing leak with a (hopefully) time insensitive compare
     $result = 0;
     for ($i = 0; $i < strlen($signature); $i++) {
       $result |= ord($built{$i}) ^ ord($signature{$i});
     }
-
-    return $result == 0;
+	if($result!=0){
+		throw new Exception($built.":".$signature);
+	}
+    return $result==0;
   }
 }
 
@@ -120,7 +124,6 @@ class OAuthSignatureMethod_HMAC_SHA1 extends OAuthSignatureMethod {
   public function build_signature($request, $consumer, $token) {
     $base_string = $request->get_signature_base_string();
     $request->base_string = $base_string;
-
     $key_parts = array(
       $consumer->secret,
       ($token) ? $token->secret : ""
@@ -128,7 +131,6 @@ class OAuthSignatureMethod_HMAC_SHA1 extends OAuthSignatureMethod {
 
     $key_parts = OAuthUtil::urlencode_rfc3986($key_parts);
     $key = implode('&', $key_parts);
-
     return base64_encode(hash_hmac('sha1', $base_string, $key, true));
   }
 }
@@ -214,7 +216,6 @@ abstract class OAuthSignatureMethod_RSA_SHA1 extends OAuthSignatureMethod {
 
   public function check_signature($request, $consumer, $token, $signature) {
     $decoded_sig = base64_decode($signature);
-
     $base_string = $request->get_signature_base_string();
 
     // Fetch the public key cert based on the request

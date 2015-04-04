@@ -29,18 +29,18 @@ class SecurityManager extends \OAuthDataStore {
 	}
 	
 	function lookup_nonce($consumer, $token, $nonce, $timestamp) {
-// 		$now = time();
-// 		if (abs($now - $timestamp) > self::$timestamp_threshold) {
-// 			throw new \OAuthException(
-// 					"Expired timestamp, yours $timestamp, ours $now"
-// 			);
-// 		}
-// 		\apc_exists($nonce."_nonce");
-// 		if($res){
-// 			return \apc_fetch($nonce."_nonce");
-// 		}
-// 		\apc_add(($nonce."_nonce"), $timestamp,self::$timestamp_threshold);
-//  		return null;
+ 		$now = time();
+ 		if (abs($now - $timestamp) > self::$timestamp_threshold) {
+ 			throw new \OAuthException(
+ 					"Expired timestamp, yours $timestamp, ours $now"
+ 			);
+ 		}
+ 		\apc_exists($nonce."_nonce");
+ 		if($res){
+ 			return \apc_fetch($nonce."_nonce");
+ 		}
+ 		\apc_add(($nonce."_nonce"), $timestamp,self::$timestamp_threshold);
+  		return null;
 		
 	}
 	//Not used at the moment
@@ -108,7 +108,7 @@ class SecurityManager extends \OAuthDataStore {
 		}
 		return null;
 	}
-	//I know this is ugly and basicly oauth without securty but salted password ruins everything with randomly generated hashes
+	//I know this is ugly and basicly oauth without security but salted password ruins everything with randomly generated hashes
 	//SSL/TLS required
 	public function login($username,$password,$nonce,$timestamp){
 		if($this->lookup_nonce(null, null, nonce,$timestamp)!=null)

@@ -50,8 +50,8 @@ public class InternalContract {
         public static final String Text       = "text"    ;
         public static final String Categorys  = "category";
         public static final String Endtime    = "endtime" ;
-        public static final String User       = "user   " ;
-        public static final String Author     = "author   " ;
+        public static final String User       = "user"    ;
+        public static final String Author     = "author"  ;
 
 
         public static final String[] PROJECTION_USER =

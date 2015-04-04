@@ -7,13 +7,13 @@ use LiseAppServer\Managers\SecurityManager;
 class NewsAdapter{
 	private static $instance;
 
-	public function listAll($username,$fields,$category=null,$sortBy='uid'){
-		$groups = UserAdapter::getInstance()->getAllGroups($username);
-		$groupsString = "fe_group LIKE '%".implode("%' OR fe_group LIKE '%", $groups)."%'";
-		
-		$where = $groupsString.($category!=null?"AND (categories LIKE %".$username."%)":"");
-		$query = self::buildQuery($where, $fields, true);
-		if(!$query)throw new \Exception("".mysql_error().": ".$where);
+	public function listAll($username,$fields,$sortBy='uid',$enabledConditions=null){
+		if($enabledConditions=null){
+			$query = self::buildQuery(null, $fields, true,UserAdapter::getInstance()->getAllGroups($username));
+		}else{
+			$query = self::buildQuery($enabledConditions, $fields, false);
+				
+		}
 		$res = array();
 		while ($currentNews = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
 			$res[$currentNews[$sortBy]]=$currentNews;
@@ -23,18 +23,30 @@ class NewsAdapter{
 	}
 	
 
-	public function listAllReadable($username,$category=null){
-		$res = $this->listAll(SecurityManager::getInstance()->username,"uid,title,teaser,bodytext,datetime,author,fal_media",$category);
-		foreach ($res as $current){
+	public function listAllReadable($username,$timestamp=null){
+		$groups = UserAdapter::getInstance()->getAllGroups($username);			
+		$query = self::buildQuery($timestamp!=null?"tstamp > ".$timestamp:null,"uid,title,categories,teaser,bodytext,datetime,endtime,author,fal_media",true,$groups);
+		if(!$query||$query==null)throw new \Exception("query is null");
+		$res = array();
+		while ($current = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
 			$current['image'] = $this->getImage($current['fal_media']);
 			unset($current['fal_media']);
-			$res[$current['uid']] = $current;
+			$res[$currentNews['uid']]=$current;
+		}
+		if(sizeof($res)==0){
+			throw new \Exception($query);
+				
+		}
+		if($timestamp != null){
+			$query = self::buildQuery("tstamp > ".$timestamp." AND !(1=1".self::generateEnabledCondition($groups).")","uid,title,categorys,teaser,bodytext,datetime,endtime,author,fal_media",false);
+			while ($current = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
+				$res[$currentNews['uid']]=$current;
+			}
 		}
 		return $res;
 	}
-
 	public function getImage($fal_media){
-		//Typo3 is a mess regarding files instead of just having one id and use that there is a general index table which indexes the file refernce table which references the actual file table which contains the real url
+		//Typo3 is a mess regarding files instead of just having one id and use that there is a general index table which indexes the file refernce table which references the actual file table which contains the real url so I simply created this function to hide the mess :D
 		$where = "ref_table = 'sys_file_reference' AND tablename = 'tx_news_domain_model_news' AND field = 'fal_media' AND recuid = ".intval ($fal_media);
 		$query = $GLOBALS['TYPO3_DB']->exec_SELECTquery("ref_uid",'sys_refindex',$where);
 		$referenceId = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)['ref_uid'];
@@ -45,7 +57,7 @@ class NewsAdapter{
 		$query = $GLOBALS['TYPO3_DB']->exec_SELECTquery("identifier",'sys_file', "uid = ".intval ($locaFileID));
 		$url = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)['identifier'];
 		if(!$url||!isset($url)||empty($url)) null;
-		return $url;
+		return "/fileadmin".$url;
 		
 	}
 	public function details($uid){
@@ -55,19 +67,37 @@ class NewsAdapter{
 		return $res;
 
 	}
-	protected static function buildQuery($where,$fields,$checkEnabled){
+	protected static function buildQuery($where,$fields,$checkEnabled=true,$groups=null){
 		if($checkEnabled){
-			$enabledCondition = $GLOBALS['TSFE']->sys_page->enableFields('tx_news_domain_model_news', false, array());
+			$enabledCondition = self::generateEnabledCondition($groups);
 			if($where){
 				$where .= $enabledCondition;
 			}else{
-				$where = "1=1".$enabledCondition;
+				$where = "1=1 ".$enabledCondition;
 			}			
 		}
 		$query = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields,'tx_news_domain_model_news',$where);
-		if(!$query)return null;
+		if(!$query||$query==null)throw new \Exception("query is null with condition: ".$where);
 		return $query;
 		
+	}
+	public static function generateEnabledCondition($groups=null){
+		$groupsString = "";
+		if($groups != null){
+			foreach($groups as $group){
+				$groupsString .= "OR tx_news_domain_model_news.fe_group='".$group."' OR FIND_IN_SET('".$group."',tx_news_domain_model_news.fe_group) ";
+			}
+		}
+		$time = time();
+		return
+		"AND ". 
+		 "(tx_news_domain_model_news.deleted=0 ".
+		  "AND tx_news_domain_model_news.t3ver_state<=0 ".
+		  "AND tx_news_domain_model_news.pid<>-1 ".
+		  "AND tx_news_domain_model_news.hidden=0 ".
+		  "AND tx_news_domain_model_news.starttime<=".$time." ".
+		  "AND (tx_news_domain_model_news.endtime=0 OR tx_news_domain_model_news.endtime>".$time.") ".
+		  "AND (tx_news_domain_model_news.fe_group='' OR tx_news_domain_model_news.fe_group IS NULL OR tx_news_domain_model_news.fe_group='0' OR FIND_IN_SET('0',tx_news_domain_model_news.fe_group) OR FIND_IN_SET('-1',tx_news_domain_model_news.fe_group) ".$groupsString."))";
 	}
 	public static function getInstance() {
 		if (self::$instance == null) {

@@ -96,9 +96,9 @@ public class InternalContentProvider extends ContentProvider {
     public Uri insert(Uri uri, ContentValues values){
         switch (URI_MATCHER.match(uri)) {
             case NEWS_LIST:
-                int id = 0;
+                long id = 0;
                 SQLiteDatabase db = databaseHelper.getWritableDatabase();
-                db.insertWithOnConflict(InternalDatabaseHelper.TBL_NEWS,null,values,SQLiteDatabase.CONFLICT_REPLACE); //replace existing values
+                id = db.insertWithOnConflict(InternalDatabaseHelper.TBL_NEWS,null,values,SQLiteDatabase.CONFLICT_REPLACE); //replace existing values
                 try {
                     return getUriForId(id, uri);
                 } catch (SQLException e) {

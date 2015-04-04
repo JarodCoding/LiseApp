@@ -12,15 +12,12 @@ import android.content.Intent;
 import android.content.SyncResult;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 
 import com.squareup.picasso.Picasso;
-import com.squareup.picasso.RequestCreator;
-import com.squareup.picasso.Target;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,11 +32,14 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import de.lisemeitnerschule.liseapp.Internal.InternalContract;
+import de.lisemeitnerschule.liseapp.LiseApp;
 import de.lisemeitnerschule.liseapp.Network.Session;
 import de.lisemeitnerschule.liseapp.R;
 import de.lisemeitnerschule.liseapp.Utilities;
@@ -63,6 +63,9 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                }
 
         }
+        File file = new File(context.getCacheDir(),"/images/");
+        if(!file.exists())file.mkdir();
+
     }
 
     @Override
@@ -72,31 +75,33 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
             Session session = Session.instance(account.name,authToken);
 
             JSONArray news = requestNews(session, getLastUpdated());
-            JSONObject current;
-            for(int i = 0;i < news.length();i++){
-                current = news.getJSONObject(i);
-                if(parse(current,getContext())){
-                    ContentValues values = new ContentValues();
-                        values.put(InternalContract.News._ID        ,current.getInt    ("uid"      ));
-                        values.put(InternalContract.News.Title      ,current.getString ("title"    ));
-                        values.put(InternalContract.News.Teaser     ,current.getString ("teaser"   ));
-                        values.put(InternalContract.News.Text       ,current.getString ("bodytext" ));
-                        values.put(InternalContract.News.Endtime    ,current.getLong   ("endtime"  ));
-                        values.put(InternalContract.News.Author     ,current.getString ("author"   ));
-                        values.put(InternalContract.News.Image      ,current.getString ("image"    ));
-                        values.put(InternalContract.News.Date       ,current.getLong   ("datetime" ));
-                        values.put(InternalContract.News.Categorys  ,current.getString ("categorys"));
-                        values.put(InternalContract.News.User       ,account.name                   );
+            if(news != null) {
+                JSONObject current;
+                for (int i = 0; i < news.length(); i++) {
+                    current = news.getJSONObject(i);
+                    if (parse(current, getContext())) {
+                        ContentValues values = new ContentValues();
+                        values.put(InternalContract.News._ID, current.getInt("uid"));
+                        values.put(InternalContract.News.Title, current.getString("title"));
+                        values.put(InternalContract.News.Teaser, current.getString("teaser"));
+                        values.put(InternalContract.News.Text, current.getString("bodytext"));
+                        values.put(InternalContract.News.Endtime, current.getLong("endtime"));
+                        values.put(InternalContract.News.Author, current.getString("author"));
+                        values.put(InternalContract.News.Image, current.getString("image"));
+                        values.put(InternalContract.News.Date, current.getLong("datetime"));
+                        values.put(InternalContract.News.Categorys, current.getString("categories"));
+                        values.put(InternalContract.News.User, account.name);
 
-                    provider.insert(InternalContract.News.CONTENT_URI,values);
-                    notify(values,getContext());
+                        provider.insert(InternalContract.News.CONTENT_URI, values);
+                        notify(values, getContext());
 
-                }else{
-                    provider.delete(Uri.withAppendedPath(InternalContract.News.CONTENT_URI,current.getString("uid")),"1=1",new String[]{});
+                    } else {
+                        provider.delete(Uri.withAppendedPath(InternalContract.News.CONTENT_URI, current.getString("uid")), "1=1", new String[]{});
+                    }
                 }
+                updateLastUpdated();
             }
-            provider.delete(InternalContract.News.CONTENT_URI,"InternalContract.News.Endtime <= ?",new String[]{""+System.currentTimeMillis()/1000});
-            updateLastUpdated();
+            provider.delete(InternalContract.News.CONTENT_URI, InternalContract.News.Endtime + " <= ?", new String[]{"" + System.currentTimeMillis() / 1000});
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -115,7 +120,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                                 @Override
                                 protected Bitmap doInBackground(Void... params) {
                                     try {
-                                        return Picasso.with(context).load(values.getAsString(InternalContract.News.Image))
+                                        return Picasso.with(context).load(new File(context.getCacheDir(),"/images"+values.getAsString(InternalContract.News.Image)))
                                                 .resize(200, 200)
                                                 .placeholder(R.drawable.ic_drawer)
                                                 .error(R.drawable.ic_drawer)
@@ -173,11 +178,11 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                     lastUpdated = new DataInputStream(inputStream).readLong();
                     inputStream.close();
                 } catch (IOException e1) {
-                    //should never happen
-
+                    //happens when the file is empty (if the file was just created)
                     e1.printStackTrace();
+                    return 0L;
                 }
-                return 0L;
+                return lastUpdated;
             }
 
             public void updateLastUpdated(){
@@ -236,44 +241,33 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                 return true;
 
             }
-                static class ImageCachingTarget implements Target{
-                    private final Context context;
-                    private final String filename;
-                    public ImageCachingTarget(Context context,String filename){
-                        this.context  = context;
-                        this.filename = filename;
-                    }
-                    @Override
-                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                        try {
-                            File file = new File(context.getCacheDir(),"images/"+filename);
-                            if(file.exists())file.delete();
-                            file.createNewFile();
-                            FileOutputStream ostream = new FileOutputStream(file);
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 6, ostream);
-                            ostream.close();
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    @Override
-                    public void onBitmapFailed(Drawable errorDrawable) {
-
-                    }
-
-                    @Override
-                    public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-                    }
-                }
             protected static String downloadImage(String pictureUrl,Context context) throws Exception {
-                Picasso picassoInstance = Picasso.with(context);
-                RequestCreator requestCreator = picassoInstance.load(pictureUrl);
-                String fileName = "images/"+pictureUrl.substring(pictureUrl.lastIndexOf("/"));
-                requestCreator.into(new ImageCachingTarget(context,fileName));
-                return fileName;
+                URL url = new URL(LiseApp.URL+pictureUrl);
+
+                InputStream input = null;
+                FileOutputStream output = null;
+
+                try {
+                    String fileName = pictureUrl.substring(pictureUrl.lastIndexOf("/"));
+
+                    input = url.openConnection().getInputStream();
+                    File file = new File(context.getCacheDir(),"images/"+fileName);
+                    if(file.exists())file.delete();
+                    file.createNewFile();
+                    output =  new FileOutputStream(file);
+                    int read;
+                    byte[] data = new byte[1024];
+                    while ((read = input.read(data)) != -1)
+                        output.write(data, 0, read);
+
+                    return fileName;
+
+                } finally {
+                    if (output != null)
+                        output.close();
+                    if (input != null)
+                        input.close();
+                }
 
             }
             protected static String parseTeaser(String source){
