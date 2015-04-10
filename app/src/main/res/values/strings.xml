@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+        <string name="search_title">Search </string>
+
+
     <string name="app_name">LiseApp</string>
     <string name="AccountName">Lise Meitner Account</string>
     <string name="action_settings">Settings</string>

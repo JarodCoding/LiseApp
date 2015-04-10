@@ -18,38 +18,40 @@ package de.lisemeitnerschule.liseapp.Internal.News;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import java.util.ArrayList;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import de.lisemeitnerschule.liseapp.R;
 
 
-public class NewsFragment extends Fragment {
+public class NewsFragment extends BaseFragment {
 
 
-
-
-
-    public static NewsFragment newInstance(Activity activity) {
+    public static NewsFragment newInstance(ActionBarActivity activity) {
 
         NewsFragment fragment = new NewsFragment();
+        fragment.init(activity);
         fragment.setRetainInstance(true);
-        fragment.activity = activity;
         return fragment;
     }
 
-
-    public Activity activity;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
+
+    @Override
+    public boolean isPublic() {
+        return false;
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -57,11 +59,14 @@ public class NewsFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_news, container, false);
 
     }
+    private LinearLayout searchContainer;
+    private EditText toolbarSearchView;
+    private ImageView searchClearButton;
+
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         RecyclerView recList = (RecyclerView) view.findViewById(R.id.cardList);
         recList.setHasFixedSize(false);
         recList.setEnabled(true);
@@ -69,7 +74,7 @@ public class NewsFragment extends Fragment {
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recList.setLayoutManager(llm);
 
-        NewsAdapter na = new NewsAdapter(activity);
+        NewsAdapter na = new NewsAdapter(parent);
         recList.setAdapter(na);
 
     }

@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="LiseBlue">       #2055AD   </color>
-    <color name="LiseBlueDarker"> #1E4B96   </color>
-    <color name="RedAccent">      #D50000   </color>
-    <color name="White">          #FFFFFF   </color>
+    <color name="LiseBlue">         #2055AD   </color>
+    <color name="LiseBlueDarker">   #1E4B96   </color>
+    <color name="RedAccent">        #D50000   </color>
+    <color name="White">            #FFFFFF   </color>
+    <color name="PrimaryWhite">     #FAFAFA   </color>
 
-    <style name="LiseTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+
+    <style name="LiseTheme" parent="LiseBase">
+
         <!--   Main Color -->
         <item name="colorPrimary">@color/LiseBlue</item>
         <!--   Darker Varient for slight differentiations like the status bar -->
         <item name="colorPrimaryDark">@color/LiseBlueDarker</item>
-        <!--   Accent Color Special elemts which deserve the users attention-->
+        <!--   Accent Color Special elements which deserve the users attention-->
         <item name="colorAccent">@color/RedAccent</item>
 
-
+        <item name="windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
 
     </style>
+
 </resources>

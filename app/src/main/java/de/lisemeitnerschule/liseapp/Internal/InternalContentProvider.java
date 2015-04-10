@@ -184,7 +184,6 @@ public class InternalContentProvider extends ContentProvider {
                         selectionArgs);
                 break;
             default:
-                // no support for updating photos or entities!
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
         // notify all listeners of changes:

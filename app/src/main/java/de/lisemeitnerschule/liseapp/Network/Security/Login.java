@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,6 +18,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.Network.Session;
 import de.lisemeitnerschule.liseapp.R;
 
@@ -49,7 +51,17 @@ public class Login extends ActionBarActivity {
         sync_onCreate(savedInstanceState);
 
         setContentView(R.layout.login);
-
+        Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
+        if (toolbar != null) {
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayShowHomeEnabled(false);
+        }else{
+            try {
+                throw new Exception("Toolbar is null!");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
         // Set up the login form.
         mUsernameView = (EditText) findViewById(R.id.username);
 
@@ -75,14 +87,19 @@ public class Login extends ActionBarActivity {
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
 
-
-        AccountType = getIntent().getStringExtra(PARAM_ACCOUNT_TYPE);
+        if(getIntent().hasExtra(PARAM_ACCOUNT_TYPE))
+            AccountType = getIntent().getStringExtra(PARAM_ACCOUNT_TYPE);
+        else
+            AccountType = "de.lisemeitnerschule.liseapp.Network.Security.Authenticator";
         CreateNew = getIntent().getBooleanExtra(PARAM_ACCOUNT_CREATE,true);
             if(!CreateNew){
                 mUsernameView.setText(getIntent().getStringExtra(PARAM_ACCOUNT_NAME));
                 setTitle(R.string.modify_title);
             }
-        AuthTokenType = getIntent().getStringExtra(PARAM_AUTHTOKEN_TYPE);
+        if(getIntent().hasExtra(PARAM_AUTHTOKEN_TYPE))
+            AccountType = getIntent().getStringExtra(PARAM_AUTHTOKEN_TYPE);
+        else
+            AccountType = "";
     }
 
 

@@ -10,6 +10,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SyncResult;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -70,6 +71,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
 
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
+
         try {
             String authToken = accountmanager.blockingGetAuthToken(account,"",true);
             Session session = Session.instance(account.name,authToken);
@@ -101,7 +103,21 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                 }
                 updateLastUpdated();
             }
-            provider.delete(InternalContract.News.CONTENT_URI, InternalContract.News.Endtime + " <= ?", new String[]{"" + System.currentTimeMillis() / 1000});
+
+
+            //delete obsolete News (older than endtime)
+
+                //delete images
+                Cursor obsoleteNews = provider.query(InternalContract.News.CONTENT_URI, new String[]{InternalContract.News.Image},InternalContract.News.Endtime + " <= ?", new String[]{"" + System.currentTimeMillis() / 1000},InternalContract.News.SORT_ORDER_DEFAULT);
+                for(int i = 0;i < obsoleteNews.getCount();i++){
+                    obsoleteNews.moveToPosition(i);
+                    final File image = new File(getContext().getCacheDir(), "/images/"+obsoleteNews.getString(0));
+                    image.delete();
+                }
+
+                //remove database entries
+                provider.delete(InternalContract.News.CONTENT_URI, InternalContract.News.Endtime + " <= ?", new String[]{"" + System.currentTimeMillis() / 1000});
+
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -120,7 +136,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                                 @Override
                                 protected Bitmap doInBackground(Void... params) {
                                     try {
-                                        return Picasso.with(context).load(new File(context.getCacheDir(),"/images"+values.getAsString(InternalContract.News.Image)))
+                                        return Picasso.with(context).load(new File(context.getCacheDir(),"/images/"+values.getAsString(InternalContract.News.Image)))
                                                 .resize(200, 200)
                                                 .placeholder(R.drawable.ic_drawer)
                                                 .error(R.drawable.ic_drawer)
@@ -251,7 +267,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                     String fileName = pictureUrl.substring(pictureUrl.lastIndexOf("/"));
 
                     input = url.openConnection().getInputStream();
-                    File file = new File(context.getCacheDir(),"images/"+fileName);
+                    File file = new File(context.getCacheDir(),"/images/"+fileName);
                     if(file.exists())file.delete();
                     file.createNewFile();
                     output =  new FileOutputStream(file);
