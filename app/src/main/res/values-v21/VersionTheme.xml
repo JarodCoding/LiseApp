@@ -17,8 +17,16 @@
         <item name="android:windowSharedElementEnterTransition">@android:transition/move</item>
         <item name="android:windowSharedElementExitTransition">@android:transition/move</item>
         <item name="actionBarWidgetTheme">@null</item>
-        <item name="actionBarTheme">@android:style/ThemeOverlay.Material.ActionBar</item>
+        <item name="actionBarTheme">@style/actionBarTheme</item>
         <item name="actionBarPopupTheme">@android:style/ThemeOverlay.Material.Light</item>
+
+    </style>
+    <style name="actionBarTheme" parent="@android:style/ThemeOverlay.Material.Dark.ActionBar">
+        <item name="android:textColor">?android:attr/textColorPrimaryInverse</item>
+        <item name="android:textColorHint">?android:attr/textColorHintInverse</item>
+        <item name="android:textColorHighlight">?android:attr/textColorHighlightInverse</item>
+        <item name="android:textColorLink">?android:attr/textColorLinkInverse</item>
+        <item name="android:elevation">4dp</item>
 
     </style>
 </resources>

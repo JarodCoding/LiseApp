@@ -15,51 +15,8 @@
             tools:context="de.lisemeitnerschule.liseapp.MenuActivity"
             android:orientation="horizontal">
 
-            <android.support.v7.widget.Toolbar
-                xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:id="@+id/main_toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?android:attr/actionBarSize"
-                android:background="@color/LiseBlue"
-                android:minHeight="?android:attr/actionBarSize"
-                a
-                android:longClickable="false">
+            <include layout="@layout/toolbar"/>
 
-                <LinearLayout
-                    android:id="@+id/search_container"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <EditText
-                        android:id="@+id/search_view"
-                        android:layout_width="0dp"
-                        android:layout_height="?android:attr/actionBarSize"
-                        android:layout_weight="1"
-                        android:background="@android:color/transparent"
-                        android:gravity="center_vertical"
-                        android:hint="@string/search_title"
-                        android:imeOptions="actionSearch"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:paddingLeft="2dp"
-                        android:singleLine="true"
-                        android:textColor="#ffffff"
-                        android:textColorHint="#b3ffffff" />
-
-                    <ImageView
-                        android:id="@+id/search_clear"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:paddingLeft="16dp"
-                        android:paddingRight="16dp"
-                        android:src="@drawable/ic_close_black_24dp" />
-
-                </LinearLayout>
-            </android.support.v7.widget.Toolbar>
             <FrameLayout android:id="@+id/container" android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 />

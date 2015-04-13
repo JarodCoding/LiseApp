@@ -16,7 +16,8 @@
 
 package de.lisemeitnerschule.liseapp.Internal.News;
 
-import android.app.Activity;
+import android.content.Context;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -28,7 +29,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import de.lisemeitnerschule.liseapp.BaseFragment;
+import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.R;
+import de.lisemeitnerschule.liseapp.Search;
 
 
 public class NewsFragment extends BaseFragment {
@@ -37,7 +41,6 @@ public class NewsFragment extends BaseFragment {
     public static NewsFragment newInstance(ActionBarActivity activity) {
 
         NewsFragment fragment = new NewsFragment();
-        fragment.init(activity);
         fragment.setRetainInstance(true);
         return fragment;
     }
@@ -53,6 +56,11 @@ public class NewsFragment extends BaseFragment {
     }
 
     @Override
+    public boolean usesCustomSearch() {
+        return true;
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -63,6 +71,13 @@ public class NewsFragment extends BaseFragment {
     private EditText toolbarSearchView;
     private ImageView searchClearButton;
 
+    @Override
+    public Search displaySearch(boolean visible) {
+        if(visible)return new NewsSearch(adapter,getActivity().getApplicationContext());
+        Cursor cursor = getActivity().getApplicationContext().getContentResolver().query(InternalContract.News.CONTENT_URI, InternalContract.News.PROJECTION_ALL, "", null, InternalContract.News.SORT_ORDER_DEFAULT);
+        adapter.swapCursor(cursor);
+        return null;
+    }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -74,9 +89,26 @@ public class NewsFragment extends BaseFragment {
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recList.setLayoutManager(llm);
 
-        NewsAdapter na = new NewsAdapter(parent);
-        recList.setAdapter(na);
+        adapter = new NewsAdapter(getActivity());
+        recList.setAdapter(adapter);
 
     }
+    private NewsAdapter adapter;
 }
+class NewsSearch implements Search{
+    public NewsSearch(NewsAdapter adapter,Context context){
+        this.NewsAdapter = adapter;
+        this.context     = context;
+    }
+    private NewsAdapter NewsAdapter;
+    private Context context;
+    @Override
+    public void search(String s) {
+        if(!s.isEmpty()) {
+            Cursor cursor = context.getContentResolver().query(InternalContract.News.CONTENT_URI, InternalContract.News.PROJECTION_ALL, InternalContract.News.Title + " LIKE '%" + s + "%' OR " + InternalContract.News.Teaser + " LIKE '%" + s + "%'", null, InternalContract.News.SORT_ORDER_DEFAULT);
+            NewsAdapter.swapCursor(cursor);
+        }
+    }
 
+
+}
