@@ -1,5 +1,6 @@
 package de.lisemeitnerschule.liseapp;
 
+import android.accounts.Account;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.SharedPreferences;
@@ -96,12 +97,14 @@ public class NavigationDrawerFragment extends Fragment{
         @Override
         public void onClick(View v) {
             if(selectedView != null) {
-                selectedView.setBackgroundColor(getResources().getColor(R.color.myDrawerBackground));
-                selectedView.setTextColor(getResources().getColor(R.color.abc_primary_text_material_light));
+            //    selectedView.setBackgroundColor(getResources().getColor(R.color.myDrawerBackground));
+            //    selectedView.setTextColor(getResources().getColor(R.color.abc_primary_text_material_light));
+                selectedView.setSelected(false);
             }
             selectedView = (TextView)v;
-            selectedView.setBackgroundColor(Color.argb(50,0,0,0));
-            selectedView.setTextColor(Color.BLACK);
+            selectedView.setSelected(true);
+            //selectedView.setBackgroundColor(Color.argb(50,0,0,0));
+            //selectedView.setTextColor(Color.BLACK);
             selectItem(id);
         }
     }
@@ -218,14 +221,23 @@ public class NavigationDrawerFragment extends Fragment{
         mActionBarDrawerToggle.onConfigurationChanged(newConfig);
     }
 
-    public void setUserData(String[] users) {
+    public void setUserData(Account[] users) {
         LinearLayout layout = (LinearLayout) mFragmentContainerView.findViewById(R.id.AccountList);
+        String[] userNames;
         if(users == null || users.length == 0){
-            users = new String[]{getResources().getString(R.string.guest)};
+            userNames = new String[]{getResources().getString(R.string.guest)};
+        }else{
+            userNames = new String[users.length];
+            int i = 0;
+            while(i < users.length){
+                userNames[i] = users[i].name;
+                i++;
+            }
         }
+
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         layoutParams.weight = 1f;
-        for(String user:users){
+        for(String user:userNames){
             TextView result = new TextView(getActivity());
             result.setLayoutParams(layoutParams);
             result.setTextSize(14);

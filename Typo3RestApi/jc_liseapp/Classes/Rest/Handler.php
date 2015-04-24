@@ -93,7 +93,8 @@ class Handler implements HandlerInterface {
 				$dispatcher = Dispatcher::getSharedDispatcher();
 				$data = $dispatcher->getSentData();
 				try{
-						 return $app->response(200,SecurityManager::getInstance()->login($data['username'], $data['password'], $data['nonce'], $data['timestamp']));
+						$securityManager = new SecurityManager();
+						 return $app->response(200,$securityManager->login($data['username'], $data['password'], $data['nonce'], $data['timestamp']));
 					}catch(\Exception $e){
 						return $app->response(401,"Login failed: ".$e);
 					}
@@ -107,18 +108,21 @@ class Handler implements HandlerInterface {
 				$GetNews = function ($request) use ($handler, $app) {
 					$dispatcher = Dispatcher::getSharedDispatcher();
 					$data = $dispatcher->getSentData();
+					$securityManager = null;
 					try{
-						$err = SecurityManager::getInstance()->securityCheck();
+						$securityManager = new SecurityManager();
+						$err = $securityManager->securityCheck();
 					}catch(\Exception $e){
 						$err = $e;
 					}
 					if($err != null)return $app->response(401, "Auto Authentication Error: ".$err);
 					
 					try{
+						$newsAdapter = new NewsAdapter($securityManager);
 						if(isset($data['timestamp']) && $data['timestamp'] > 0){
-							return NewsAdapter::getInstance()->listAllReadable(SecurityManager::getInstance()->username,$data['timestamp']);
+							return $newsAdapter->listAllReadable($data['timestamp']);
 						}
-						return NewsAdapter::getInstance()->listAllReadable(SecurityManager::getInstance()->username);
+						return $newsAdapter->listAllReadable();
 					}catch(\Exception $e){
 						$err = $e;
 					}
@@ -132,7 +136,8 @@ class Handler implements HandlerInterface {
 						
 				$getCallback = function ($request) use ($handler, $app) {
 					try{
-					$err = SecurityManager::getInstance()->securityCheck();
+						$securityManager = new SecurityManager();
+					$err = $securityManager->securityCheck();
 					}catch(\Exception $e){
 						$err = $e;
 					}

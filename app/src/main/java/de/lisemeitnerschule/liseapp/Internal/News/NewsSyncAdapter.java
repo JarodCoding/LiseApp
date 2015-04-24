@@ -9,6 +9,7 @@ import android.content.ContentProviderClient;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.SyncResult;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -26,11 +27,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,27 +40,13 @@ import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.LiseApp;
 import de.lisemeitnerschule.liseapp.Network.Session;
 import de.lisemeitnerschule.liseapp.R;
-import de.lisemeitnerschule.liseapp.Utilities;
 
 /**
  * Created by Pascal on 23.3.15.
  */
 public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
-    private final AccountManager accountmanager;
     public NewsSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
-        accountmanager = AccountManager.get(context);
-        if(LastUpdatedFile == null) {
-           LastUpdatedFile = new File(getContext().getCacheDir(),"LastUpdated");
-           if(!LastUpdatedFile.exists())
-               try {
-                   LastUpdatedFile.createNewFile();
-               } catch (IOException e1) {
-                   //Should never happen
-                   e1.printStackTrace();
-               }
-
-        }
         File file = new File(context.getCacheDir(),"/images/");
         if(!file.exists())file.mkdir();
 
@@ -73,7 +56,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
 
         try {
-            String authToken = accountmanager.blockingGetAuthToken(account,"",true);
+            String authToken = AccountManager.get(getContext()).blockingGetAuthToken(account,"",true);
             Session session = Session.instance(account.name,authToken);
 
             JSONArray news = requestNews(session, getLastUpdated());
@@ -184,37 +167,14 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
     //retriving
 
         //Last Updated
-
-                private static Long lastUpdated    = 0L;
-                private static File LastUpdatedFile;
             public long getLastUpdated(){
-                if(lastUpdated > 0L)return lastUpdated;
-                try {
-                    FileInputStream  inputStream = new FileInputStream(LastUpdatedFile);
-                    lastUpdated = new DataInputStream(inputStream).readLong();
-                    inputStream.close();
-                } catch (IOException e1) {
-                    //happens when the file is empty (if the file was just created)
-                    e1.printStackTrace();
-                    return 0L;
-                }
-                return lastUpdated;
+                SharedPreferences settings = getContext().getSharedPreferences("LiseNetworkData", 0);
+                return settings.getLong("NewsLastUpdate",0);
             }
 
             public void updateLastUpdated(){
-                lastUpdated = Utilities.generateTimeStamp();
-                try {
-                    FileOutputStream outputStream = new FileOutputStream(LastUpdatedFile);
-                    new DataOutputStream(outputStream).writeLong(lastUpdated);
-                    outputStream.close();
-                } catch (FileNotFoundException e1) {
-                    //should never happen
-                    e1.printStackTrace();
-                } catch (IOException e1) {
-                    //should never happen
-
-                    e1.printStackTrace();
-                }
+                SharedPreferences settings = getContext().getSharedPreferences("LiseNetworkData", 0);
+                settings.edit().putLong("NewsLastUpdate",System.currentTimeMillis()).commit();
             }
 
 

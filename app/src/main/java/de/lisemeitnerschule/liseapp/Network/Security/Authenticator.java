@@ -39,13 +39,19 @@ public class Authenticator extends AbstractAccountAuthenticator {
     }
     public static Intent addAccount(Context context) {
         final Intent intent = new Intent(context, Login.class);
-        intent.putExtra(Login.PARAM_ACCOUNT_CREATE, true);
         intent.putExtra(Login.PARAM_ACCOUNT_TYPE, accountType);
-        intent.putExtra(Login.PARAM_AUTHTOKEN_TYPE, "");
 
         return intent;
     }
-
+    public static Intent addAccount(Context context,String CancelButton,String oldName) {
+        final Intent intent = new Intent(context, Login.class);
+        intent.putExtra(Login.PARAM_ACCOUNT_TYPE, accountType);
+        if(CancelButton != null)
+        intent.putExtra(Login.PARAM_CANCEL_TEXT, CancelButton);
+        if(oldName != null)
+            intent.putExtra(Login.PARAM_ACCOUNT_NAME, oldName);
+        return intent;
+    }
     @Override
     public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
         return null;
@@ -85,9 +91,7 @@ public class Authenticator extends AbstractAccountAuthenticator {
         // an intent to display our AuthenticatorActivity.
         final Intent intent = new Intent(context, Login.class);
         intent.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
-        intent.putExtra(Login.PARAM_ACCOUNT_CREATE, false);
         intent.putExtra(Login.PARAM_ACCOUNT_TYPE, account.type);
-        intent.putExtra(Login.PARAM_AUTHTOKEN_TYPE, authTokenType);
         intent.putExtra(Login.PARAM_ACCOUNT_NAME, account.name);
         final Bundle bundle = new Bundle();
         bundle.putParcelable(AccountManager.KEY_INTENT, intent);

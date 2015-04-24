@@ -101,7 +101,7 @@ class SecurityManager extends \OAuthDataStore {
 				$OAuthRequest = new \OAuthRequest($http_method,$http_url,\OAuthUtil::split_header($OAuthHeader));
 			
 			//Verify Request
-				self::getServerInstance()->verify_request($OAuthRequest);
+				$this->getServerInstance()->verify_request($OAuthRequest);
 				$this->username = $OAuthRequest->get_parameter("oauth_consumer_key");
 		} catch (Exception $e) {
 			return $e;
@@ -120,16 +120,10 @@ class SecurityManager extends \OAuthDataStore {
 	}
 	
 	
-	public static function getInstance() {
-		if (self::$instance == null) {
-			self::$instance = new SecurityManager();
-		}
-		return self::$instance;
-	}
 	private static $ServerInstance;
-	private static function getServerInstance(){
+	private function getServerInstance(){
 		if (self::$ServerInstance == null) {
-			self::$ServerInstance = new \OAuthServer(self::getInstance());
+			self::$ServerInstance = new \OAuthServer($this);
 			self::$ServerInstance->add_signature_method(new \OAuthSignatureMethod_HMAC_SHA1());
 		}
 	return self::$ServerInstance;

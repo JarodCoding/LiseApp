@@ -33,8 +33,11 @@ class UserAdapter{
 	}
 	public function getGroups($username){
 		$tmp = $this->getUser($username)['usergroup'];
-		$res = explode(',',$tmp);
-		return $res;
+		if(strlen($tmp)>1){
+			return explode(',',$tmp);
+		}else{
+			return $tmp;
+		}
 	}
 	public function getSubGroups($group){
  			$query = $GLOBALS['TYPO3_DB']->exec_SELECTquery("subgroup",'fe_groups',"uid=".$group);

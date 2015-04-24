@@ -5,22 +5,25 @@ import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.Network.Session;
 import de.lisemeitnerschule.liseapp.R;
+import de.lisemeitnerschule.liseapp.Utilities;
 
 
 /**
@@ -28,9 +31,9 @@ import de.lisemeitnerschule.liseapp.R;
  */
 public class Login extends ActionBarActivity {
     public static final String PARAM_ACCOUNT_TYPE = "ACCOUNT_TYPE";
-    public static final String PARAM_ACCOUNT_CREATE = "ACCOUNT_CREATE";
     public static final String PARAM_ACCOUNT_NAME = "ACCOUNT_NAME";
-    public static final String PARAM_AUTHTOKEN_TYPE = "AUTHTOKEN_TYPE";
+    public static final String PARAM_CANCEL_TEXT  = "CANCEL_TEXT ";
+
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -42,14 +45,13 @@ public class Login extends ActionBarActivity {
     private View     mProgressView  ;
     private View     mLoginFormView ;
     private String   AccountType    ;
-    private boolean  CreateNew      ;
-    private String   AuthTokenType  ;
-
+    private String   oldAccountName ;
+    private CharSequence cancleButtonText;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sync_onCreate(savedInstanceState);
-
+        Utilities.setDefaultStaticStatusBarColor(this);
         setContentView(R.layout.login);
         Toolbar toolbar = (Toolbar) findViewById(R.id.main_toolbar);
         if (toolbar != null) {
@@ -77,29 +79,55 @@ public class Login extends ActionBarActivity {
             }
         });
 
-        Button mUsernameSignInButton = (Button) findViewById(R.id.username_sign_in_button);
+        final TextView mUsernameSignInButton = (TextView) findViewById(R.id.username_sign_in_button);
         mUsernameSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 attemptLogin();
             }
         });
+
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+        System.err.println(getIntent().hasExtra(PARAM_ACCOUNT_TYPE));
+        AccountType = getIntent().getStringExtra(PARAM_ACCOUNT_TYPE);
 
-        if(getIntent().hasExtra(PARAM_ACCOUNT_TYPE))
-            AccountType = getIntent().getStringExtra(PARAM_ACCOUNT_TYPE);
-        else
-            AccountType = "de.lisemeitnerschule.liseapp.Network.Security.Authenticator";
-        CreateNew = getIntent().getBooleanExtra(PARAM_ACCOUNT_CREATE,true);
-            if(!CreateNew){
-                mUsernameView.setText(getIntent().getStringExtra(PARAM_ACCOUNT_NAME));
-                setTitle(R.string.modify_title);
-            }
-        if(getIntent().hasExtra(PARAM_AUTHTOKEN_TYPE))
-            AccountType = getIntent().getStringExtra(PARAM_AUTHTOKEN_TYPE);
-        else
-            AccountType = "";
+        if(getIntent().hasExtra(PARAM_ACCOUNT_NAME)){
+            oldAccountName = getIntent().getStringExtra(PARAM_ACCOUNT_NAME);
+            mUsernameView.setText(oldAccountName);
+            setTitle(R.string.modify_title);
+        }
+        if(getIntent().hasExtra(PARAM_CANCEL_TEXT)){
+            cancleButtonText = getIntent().getCharSequenceExtra(PARAM_CANCEL_TEXT);
+        }else{
+            cancleButtonText = getText(R.string.cancel);
+        }
+        mUsernameSignInButton.setText(cancleButtonText);
+
+        TextWatcher CancelListener = new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (mUsernameView.getText().toString().isEmpty() || mPasswordView.getText().toString().isEmpty()) {
+                        mUsernameSignInButton.setText(cancleButtonText);
+                    } else {
+                        mUsernameSignInButton.setText(getString(R.string.action_sign_in));
+
+                    }
+                }
+            };
+        mUsernameView.addTextChangedListener(CancelListener);
+        mPasswordView.addTextChangedListener(CancelListener);
+
     }
 
 
@@ -234,6 +262,7 @@ public class Login extends ActionBarActivity {
             }
             final Intent res = new Intent();
             res.putExtra(AccountManager.KEY_ACCOUNT_NAME, mUsername);
+            System.err.println(AccountType);
             res.putExtra(AccountManager.KEY_ACCOUNT_TYPE, AccountType);
             res.putExtra(AccountManager.KEY_AUTHTOKEN, SecretHash);
             return res;
@@ -249,14 +278,22 @@ public class Login extends ActionBarActivity {
                 AccountManager manager = AccountManager.get(getApplicationContext());
 
                 //account Info
-                    String accountName       = res.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)                           ;
-                    String authtoken         = res.getStringExtra(AccountManager.KEY_AUTHTOKEN)                              ;
-                    final Account account    = new Account(accountName, res.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)) ;
-
-                if(CreateNew){
-                    manager.addAccountExplicitly(account, authtoken, null);
-                }else{
-                    manager.setPassword(account,authtoken);
+                    String accountName       = res.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
+                    String authtoken         = res.getStringExtra(AccountManager.KEY_AUTHTOKEN)   ;
+                    Account account                                                               ;
+                if(oldAccountName!=null){
+                    account    = new Account(oldAccountName, res.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)) ;
+                    AccountManager.get(Login.this).removeAccount(account,null,null);
+                }
+                account = new Account(accountName, res.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE)) ;
+                manager.addAccountExplicitly(account, authtoken, null);
+                ContentResolver.setMasterSyncAutomatically(true);
+                ContentResolver.setIsSyncable(account, InternalContract.AUTHORITY, 1);
+                ContentResolver.setSyncAutomatically(account, InternalContract.AUTHORITY, true);
+                try{
+                    ContentResolver.requestSync(account, InternalContract.AUTHORITY, new Bundle());
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
                 setAccountAuthenticatorResult(res.getExtras());
                 setResult(RESULT_OK, res);

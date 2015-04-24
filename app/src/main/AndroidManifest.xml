@@ -28,17 +28,19 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".MenuActivity"
+            android:name=".BaseActivity"
             android:label="@string/title_activity_menu" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
 
             </intent-filter>
         </activity>
         <activity
             android:name=".Network.Security.Login"
             android:label="@string/login_title"
-            android:windowSoftInputMode="adjustResize|stateVisible" >
+            android:windowSoftInputMode="adjustResize|stateVisible"
+            android:theme="@style/AppTheme" >
         </activity>
 
         <service android:name=".Network.Security.AuthenticationService" >
@@ -73,15 +75,6 @@
                 android:resource="@xml/news_syncadapter" />
         </service>
 
-        <activity
-            android:name=".BaseActivity"
-            android:label="@string/title_activity_main_menu" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
     </application>
 
 </manifest>

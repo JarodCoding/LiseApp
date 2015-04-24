@@ -59,8 +59,9 @@
                 android:id="@+id/NavigationList"
                 android:orientation="vertical"
                 >
-                <TextView android:layout_width="match_parent"
+                <Button android:layout_width="match_parent"
                     android:clickable="true"
+                    android:background="@drawable/row_selector"
                     android:id="@+id/NavigationListEntry_News"
                     android:layout_height="48dp"
                     android:drawablePadding="16dp" android:padding="16dp" android:textSize="14sp"

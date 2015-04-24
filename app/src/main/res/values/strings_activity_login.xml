@@ -6,7 +6,7 @@
 
     <string name="prompt_username">Username</string>
     <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Confirm  > </string>
+    <string name="action_sign_in">Confirm<b> > </b></string>
     <string name="action_sign_in_short">Confirm</string>
 
     <string name="error_invalid_username">This username is invalid</string>

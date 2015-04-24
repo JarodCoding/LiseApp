@@ -7,8 +7,10 @@ import android.animation.ValueAnimator;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -62,6 +64,7 @@ public class BaseActivity extends ActionBarActivity
                 e.printStackTrace();
             }
         }
+        @Deprecated
         public void setupSync(){
             Account[] accounts;
             ContentProviderClient InterContentProviderClient = getContentResolver().acquireContentProviderClient(InternalContract.CONTENT_URI);
@@ -216,6 +219,7 @@ public class BaseActivity extends ActionBarActivity
                     getSupportActionBar().setDisplayShowHomeEnabled(true);
                     //getSupportActionBar().setHomeButtonEnabled(true);
                     Utilities.removeStaticStatusBarColor( BaseActivity.this);
+                    new ColorDrawable();
                     for (int i = 0; i < menu.size(); i++) {
                         menu.getItem(i).setVisible(true);
                     }
@@ -320,10 +324,12 @@ public class BaseActivity extends ActionBarActivity
     private NavigationDrawerFragment mNavigationDrawerFragment;
     private Toolbar mToolbar;
     private DrawerLayout mDrawerLayout;
+    public static final String MainPrefs = "LiseGeneralPreferences";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Utilities.removeStaticStatusBarColor(this);
         setContentView(R.layout.activity_main_menu);
         mToolbar = (Toolbar) findViewById(R.id.main_toolbar);
         setSupportActionBar(mToolbar);
@@ -334,10 +340,15 @@ public class BaseActivity extends ActionBarActivity
         // Set up the drawer.
         mNavigationDrawerFragment.setup(R.id.fragment_drawer, mDrawerLayout, mToolbar);
         // populate the navigation drawer
-        //TODO get accounts
-        mNavigationDrawerFragment.setUserData(null);
+         mNavigationDrawerFragment.setUserData(AccountManager.get(this).getAccountsByType(Authenticator.accountType));
         setupSearchbar();
 
+        SharedPreferences settings = getSharedPreferences(MainPrefs, 0);
+
+        if (settings.getBoolean("first_time", true)) {
+
+            settings.edit().putBoolean("first_time", false).commit();
+        }
     }
 
     @Override
@@ -345,6 +356,7 @@ public class BaseActivity extends ActionBarActivity
         switch (position){
             case 0:
                 getFragmentManager().beginTransaction().replace(R.id.container, NewsFragment.newInstance(this)).commit();
+
         }
 
         ;

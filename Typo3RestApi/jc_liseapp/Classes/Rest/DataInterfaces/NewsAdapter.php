@@ -1,31 +1,28 @@
 <?php
 namespace LiseAppServer\DataInterface;
+require_once  'DataAdapter.php';
 
 use TYPO3\CMS\Core\SingletonInterface;
 use LiseAppServer\Managers\SecurityManager;
 
-class NewsAdapter{
-	private static $instance;
+class NewsAdapter extends SecuredDataAdapter{
 
-	public function listAll($username,$fields,$sortBy='uid',$enabledConditions=null){
-		if($enabledConditions=null){
-			$query = self::buildQuery(null, $fields, true,UserAdapter::getInstance()->getAllGroups($username));
-		}else{
-			$query = self::buildQuery($enabledConditions, $fields, false);
-				
-		}
+
+	public function listAll($username,$fields,$sortBy='uid'){
+		$query = self::buildQuery(null, $fields);
 		$res = array();
-		while ($currentNews = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
-			$res[$currentNews[$sortBy]]=$currentNews;
+		while ($current = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
+			$current['image'] = $this->getImage($current['fal_media']);
+			unset($current['fal_media']);
+			$res[$currentNews[$sortBy]]=$current;
 		}
 
 		return $res;
 	}
 	
 
-	public function listAllReadable($username,$timestamp=null){
-		$groups = UserAdapter::getInstance()->getAllGroups($username);			
-		$query = self::buildQuery($timestamp!=null?"tstamp > ".$timestamp:null,"uid,title,categories,teaser,bodytext,datetime,endtime,author,fal_media",true,$groups);
+	public function listAllReadable($timestamp=null){
+		$query = self::buildQuery($timestamp!=null?"tstamp > ".$timestamp:null,"uid,title,categories,teaser,bodytext,datetime,endtime,author,fal_media");
 		if(!$query||$query==null)throw new \Exception("query is null");
 		$res = array();
 		while ($current = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
@@ -38,7 +35,7 @@ class NewsAdapter{
 				
 		}
 		if($timestamp != null){
-			$query = self::buildQuery("tstamp > ".$timestamp." AND !(1=1".self::generateEnabledCondition($groups).")","uid,title,categorys,teaser,bodytext,datetime,endtime,author,fal_media",false);
+			$query = self::buildQuery("tstamp > ".$timestamp." AND !(1=1".$this->generateSecuredEnabledCondition().")","uid,title,categorys,teaser,bodytext,datetime,endtime,author,fal_media",false);
 			while ($current = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query)) {
 				$res[$currentNews['uid']]=$current;
 			}
@@ -60,16 +57,9 @@ class NewsAdapter{
 		return "/fileadmin".$url;
 		
 	}
-	public function details($uid){
-		$query = self::buildQuery("uid=".$uid, "*", false);
-		$res = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($query);
-		if(!$res||!isset($res)||empty($res))return null;
-		return $res;
-
-	}
-	protected static function buildQuery($where,$fields,$checkEnabled=true,$groups=null){
+	public function buildQuery($where,$fields,$checkEnabled=true,$groups=null){
 		if($checkEnabled){
-			$enabledCondition = self::generateEnabledCondition($groups);
+			$enabledCondition = $this->generateSecuredEnabledCondition($groups);
 			if($where){
 				$where .= $enabledCondition;
 			}else{
@@ -77,32 +67,13 @@ class NewsAdapter{
 			}			
 		}
 		$query = $GLOBALS['TYPO3_DB']->exec_SELECTquery($fields,'tx_news_domain_model_news',$where);
+		throw new \Exception("query is null with condition: ".$where);
 		if(!$query||$query==null)throw new \Exception("query is null with condition: ".$where);
 		return $query;
 		
 	}
-	public static function generateEnabledCondition($groups=null){
-		$groupsString = "";
-		if($groups != null){
-			foreach($groups as $group){
-				$groupsString .= "OR tx_news_domain_model_news.fe_group='".$group."' OR FIND_IN_SET('".$group."',tx_news_domain_model_news.fe_group) ";
-			}
-		}
-		$time = time();
-		return
-		"AND ". 
-		 "(tx_news_domain_model_news.deleted=0 ".
-		  "AND tx_news_domain_model_news.t3ver_state<=0 ".
-		  "AND tx_news_domain_model_news.pid<>-1 ".
-		  "AND tx_news_domain_model_news.hidden=0 ".
-		  "AND tx_news_domain_model_news.starttime<=".$time." ".
-		  "AND (tx_news_domain_model_news.endtime=0 OR tx_news_domain_model_news.endtime>".$time.") ".
-		  "AND (tx_news_domain_model_news.fe_group='' OR tx_news_domain_model_news.fe_group IS NULL OR tx_news_domain_model_news.fe_group='0' OR FIND_IN_SET('0',tx_news_domain_model_news.fe_group) OR FIND_IN_SET('-1',tx_news_domain_model_news.fe_group) ".$groupsString."))";
+	function __construct($securityManager) {
+		parent::__construct('tx_news_domain_model_news',$securityManager);
 	}
-	public static function getInstance() {
-		if (self::$instance == null) {
-			self::$instance = new NewsAdapter();
-		}
-		return self::$instance;
-	}
+	
 }
