@@ -19,6 +19,7 @@ package de.lisemeitnerschule.liseapp.Internal.News;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -52,7 +53,7 @@ public class NewsFragment extends BaseFragment {
 
     @Override
     public boolean isPublic() {
-        return false;
+        return true;
     }
 
     @Override
@@ -78,7 +79,7 @@ public class NewsFragment extends BaseFragment {
         adapter.swapCursor(cursor);
         return null;
     }
-
+    private SwipeRefreshLayout refreshLayout;
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -91,6 +92,14 @@ public class NewsFragment extends BaseFragment {
 
         adapter = new NewsAdapter(getActivity());
         recList.setAdapter(adapter);
+        refreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                NewsSyncAdapter.syncManually(NewsFragment.this.getActivity(),refreshLayout);
+            }
+        });
+        refreshLayout.setEnabled(true);
 
     }
     private NewsAdapter adapter;

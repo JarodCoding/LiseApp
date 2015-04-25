@@ -21,14 +21,14 @@
 
                 <ImageView android:layout_width="70dp" android:layout_height="70dp"
                     android:id="@+id/imgAvatar"
-                   android:src="@drawable/lise_icon"
                     android:layout_alignParentTop="true"
                     android:layout_alignParentLeft="true" android:layout_alignParentStart="true"
                     android:layout_marginLeft="16dp" android:layout_marginTop="16dp"
                     android:layout_marginBottom="8dp"
 
-                    />
 
+                />
+                <!--android:src="@drawable/lise_icon"/-->
                 <LinearLayout android:orientation="vertical" android:layout_width="fill_parent"
                     android:layout_height="wrap_content" android:layout_alignParentLeft="true"
                     android:layout_alignParentStart="true" android:layout_alignParentBottom="true"
@@ -67,8 +67,9 @@
                     android:drawablePadding="16dp" android:padding="16dp" android:textSize="14sp"
                     android:gravity="center_vertical" android:textColor="@color/primary_text_default_material_light"
                     android:text="@string/News"
-                    android:drawableLeft="@drawable/ic_newspaper_black_24dp"
                     />
+                <!--android:drawableLeft="@drawable/ic_newspaper_black_24dp"-->
+
             </LinearLayout>
 
         </LinearLayout>

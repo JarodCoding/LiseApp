@@ -3,15 +3,29 @@
 xmlns:tools="http://schemas.android.com/tools"
 android:layout_width="match_parent"
 android:layout_height="match_parent"
-    android:padding="8dp"
 
 tools:context="de.lisemeitnerschule.liseapp.News.NewsFragment">
+<android.support.v4.widget.SwipeRefreshLayout
+    android:id="@+id/swipeRefreshLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-<android.support.v7.widget.RecyclerView
-    android:id="@+id/cardList"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/cardList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true"
+        android:scrollbars="vertical"
+        />
+</android.support.v4.widget.SwipeRefreshLayout>
+<TextView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:animateLayoutChanges="true"
+    android:text="@string/emptyNews"
+    android:gravity="center"
+    android:textStyle="italic"
+    android:textSize="@dimen/abc_text_size_medium_material"
+    android:textColor="#9E9E9E"
     />
 
 </RelativeLayout>

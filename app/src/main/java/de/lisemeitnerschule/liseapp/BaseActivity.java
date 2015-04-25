@@ -45,57 +45,8 @@ public class BaseActivity extends ActionBarActivity
 
     private ImageView backarrow;
 
-    //Syncing
-        public static void syncManually(Context context){
-            Account[] accounts = AccountManager.get(context).getAccountsByType(Authenticator.accountType);
 
-            for(Account current:accounts){
-                try{
-                    ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-        }
-        public static void syncManually(Context context,Account account){
-            try{
-                ContentResolver.requestSync(account, InternalContract.AUTHORITY, new Bundle());
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
-        @Deprecated
-        public void setupSync(){
-            Account[] accounts;
-            ContentProviderClient InterContentProviderClient = getContentResolver().acquireContentProviderClient(InternalContract.CONTENT_URI);
 
-            if((accounts = AccountManager.get(this).getAccountsByType(Authenticator.accountType)).length == 0) {
-                //create a new Account if none exists
-                startActivity(Authenticator.addAccount(this));
-            }
-            for(Account current:accounts){
-                ContentResolver.setMasterSyncAutomatically(true);
-                ContentResolver.setIsSyncable(current, InternalContract.AUTHORITY, 1);
-                ContentResolver.setSyncAutomatically(current, InternalContract.AUTHORITY, true);
-                try {
-                    if(InterContentProviderClient.query(InternalContract.News.CONTENT_URI,new String[]{InternalContract.News._ID},"",null,InternalContract.News.SORT_ORDER_DEFAULT).getCount()==0){
-                        try{
-                            ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
-                        }catch (Exception e){
-                            e.printStackTrace();
-
-                        }
-                    }
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                    try{
-                        ContentResolver.requestSync(current, InternalContract.AUTHORITY, new Bundle());
-                    }catch (Exception e1){
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
 
     private Search search;
     //Searchbar

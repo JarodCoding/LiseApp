@@ -1,9 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/search_action" android:title="@string/search_title"
-        android:orderInCategory="0" app:showAsAction="always"
-        android:icon="@drawable/ic_magnify_white_24dp"
-        />
-    <item android:id="@+id/action_settings" android:title="@string/action_settings"
+        android:orderInCategory="0"
+        app:showAsAction="always"
+        android:icon="@drawable/abc_ic_search_api_mtrl_alpha"
+        />    <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
 </menu>

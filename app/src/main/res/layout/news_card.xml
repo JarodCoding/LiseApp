@@ -5,14 +5,11 @@
     android:id="@+id/card_view"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    card_view:cardCornerRadius="2dp"
-    card_view:cardElevation="5dp"
-    card_view:cardBackgroundColor="@color/White"
-    android:background="?android:selectableItemBackground"
     android:focusable="true"
     android:clickable="true"
     android:animateLayoutChanges="true"
-
+    android:padding="16dp"
+    style="@style/CardView"
     >
 
     <LinearLayout
