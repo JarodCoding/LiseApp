@@ -1,16 +1,10 @@
 package de.lisemeitnerschule.liseapp.Internal.News;
 
 
-import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.ActivityOptions;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DataSetObserver;
-import android.os.Build;
-import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.text.Spannable;
@@ -21,7 +15,6 @@ import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bluejamesbond.text.DocumentView;
 import com.bluejamesbond.text.style.JustifiedSpan;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
@@ -142,17 +135,18 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
     public static class NewsViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
         public TextView Title;
         public ImageView Picture;
-        public com.bluejamesbond.text.DocumentView Teaser;
+        public TextView Teaser;
         public int newsIndex;
         public NewsAdapter parent;
-        public DocumentView Body;
+        //public DocumentView Body;
+        public View mainView;
         public NewsViewHolder(View itemView) {
             super(itemView);
             Title = (TextView) itemView.findViewById(R.id.NewsTitle);
             Picture = (ImageView)itemView.findViewById(R.id.NewsPicture);
-            Teaser = (com.bluejamesbond.text.DocumentView) itemView.findViewById(R.id.NewsTeaser);
-            Body = (com.bluejamesbond.text.DocumentView) itemView.findViewById(R.id.NewsBody);
-
+            Teaser = (TextView) itemView.findViewById(R.id.NewsTeaser);
+           // Body = (com.bluejamesbond.text.DocumentView) itemView.findViewById(R.id.NewsBody);
+            this.mainView = itemView;
             itemView.setOnClickListener(this);
         }
         public NewsDetails generateDetails(){
@@ -169,18 +163,18 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
 
         @Override
         public void onClick(View v) {
-            News_Detail_Page detail_page = News_Detail_Page.newInstance(parent.Activity,generateDetails());
-            FragmentManager fragmentManager = ((ActionBarActivity)parent.Activity).getSupportFragmentManager();
-            fragmentManager.beginTransaction()
-                    .replace(R.id.container, detail_page)
-                    .commit();
-        }
-        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-        protected Bundle setupAnimations(View v){
-            return  ActivityOptions.makeSceneTransitionAnimation(parent.Activity,v,"card_view").toBundle();
+//            News_Detail_Page detail_page = News_Detail_Page.newInstance(parent.Activity,generateDetails());
+//            android.app.FragmentManager fragmentManager = ((BaseActivity)parent.Activity).getFragmentManager();
+//          fragmentManager.beginTransaction()
+//                    .replace(R.id.container, detail_page)
+//                    .addToBackStack(null)
+
+                   // .commit();
 
         }
+
     }
+
             @Override
             public void onBindViewHolder(final NewsViewHolder holder, int position) {
                 if (!DataValid) {
@@ -190,40 +184,45 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder
                     throw new IllegalStateException("couldn't move cursor to position " + position);
                 }
                 //image
-                    final File image = new File(this.Context.getCacheDir(), "/images/"+Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Image)));
-                    System.err.println(image);
-                    holder.Picture.getViewTreeObserver()
-                            .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                                // Wait until layout to call Picasso
-                                @Override
-                                public void onGlobalLayout() {
-                                    // Ensure we call this only once
-                                    holder.Picture.getViewTreeObserver()
-                                            .removeOnGlobalLayoutListener(this);
-                                    RequestCreator bitmap = Picasso.with(Context)
-                                                                .load(image)
-                                                                .resize(holder.Picture.getWidth(), 0);
-                                    System.err.println(image);
-                                    bitmap.into(holder.Picture);
-                                }
-                            });
+                    String imageName = Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Image));
+                    if(imageName!=null&&!imageName.isEmpty()) {
+                        final File image = new File(this.Context.getCacheDir(), "/images/" +imageName);
+                        if(image.exists()) {
+                            holder.Picture.getViewTreeObserver()
+                                    .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                        // Wait until layout to call Picasso
+                                        @Override
+                                        public void onGlobalLayout() {
+                                            // Ensure we call this only once
+                                            holder.Picture.getViewTreeObserver()
+                                                    .removeOnGlobalLayoutListener(this);
+                                            RequestCreator bitmap = Picasso.with(Context)
+                                                    .load(image)
+                                                    .resize(holder.Picture.getWidth(), 0);
+                                            System.err.println(image);
+                                            bitmap.into(holder.Picture);
+                                        }
+                                    });
+                        }
+                    }
                 //title
                     String title = Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Title));
                     System.err.println(title);
                     holder.Title.setText(title);
 
                 //teaser
-                    String teaser = Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Teaser));
-                    System.err.println(teaser);
-                    holder.Teaser.setText(teaser);
+                Spannable Teaser  = (Spannable)Html.fromHtml(Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Teaser)));
+                //Teaser.setSpan(new JustifiedSpan(), 0, Teaser.length(), 0);
+                holder.Teaser.setText(Teaser);
                 //Text
                     Spannable Text  = (Spannable)Html.fromHtml(Cursor.getString(Cursor.getColumnIndex(InternalContract.News.Text)));
                         Text.setSpan(new JustifiedSpan(),0,Text.length(),0);
-                    holder.Body.setText(Text);
+                    //holder.Body.setText(Text);
 
                 //Data
                     holder.newsIndex = Cursor.getPosition();
                     holder.parent = this;
+
 
             }
 

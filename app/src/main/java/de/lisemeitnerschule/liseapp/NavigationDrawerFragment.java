@@ -85,7 +85,7 @@ public class NavigationDrawerFragment extends Fragment{
         for(int i = 0;i < EntryList.getChildCount();i++){
             EntryList.getChildAt(i).setOnClickListener(new NavigationItemClickListener(i));
         }
-        EntryList.getChildAt(0).callOnClick();
+        mCallbacks.onDrawerCreate();
         return view;
     }
 
@@ -222,29 +222,45 @@ public class NavigationDrawerFragment extends Fragment{
     }
 
     public void setUserData(Account[] users) {
-        LinearLayout layout = (LinearLayout) mFragmentContainerView.findViewById(R.id.AccountList);
-        String[] userNames;
-        if(users == null || users.length == 0){
-            userNames = new String[]{getResources().getString(R.string.guest)};
-        }else{
-            userNames = new String[users.length];
-            int i = 0;
-            while(i < users.length){
-                userNames[i] = users[i].name;
-                i++;
-            }
-        }
+        //Layout
+            LinearLayout layout = (LinearLayout) mFragmentContainerView.findViewById(R.id.AccountList);
+            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            layoutParams.weight = 1f;
 
-        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        layoutParams.weight = 1f;
-        for(String user:userNames){
+        if(users == null || users.length < 2){
             TextView result = new TextView(getActivity());
             result.setLayoutParams(layoutParams);
             result.setTextSize(14);
-            result.setText(user);
+            result.setText(getResources().getString(R.string.guest));
             result.setTextColor(Color.WHITE);
+            result.setClickable(true);
+            result.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    LiseApp.login(getActivity());
+                }
+            });
             layout.addView(result);
+        }else{
+
+            for(Account user:users){
+                if(user.name.equalsIgnoreCase(getString(R.string.publicUser)))continue;
+                TextView result = new TextView(getActivity());
+                result.setLayoutParams(layoutParams);
+                result.setTextSize(14);
+                result.setText(user.name);
+                result.setTextColor(Color.WHITE);
+                result.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        //TODO implement User Control
+                    }
+                });
+                layout.addView(result);
+            }
         }
+
+
     }
 
 

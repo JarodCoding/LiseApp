@@ -189,7 +189,7 @@ public class Session {
     }
 
 
-    public HttpURLConnection createSecuredConnection(String path) throws IOException, URISyntaxException {
+    public HttpURLConnection createConnection(String path) throws IOException, URISyntaxException {
         HttpURLConnection connection = (HttpURLConnection) new URL(path).openConnection();
             connection.setInstanceFollowRedirects(true);
             connection.setUseCaches(false);
@@ -197,7 +197,15 @@ public class Session {
 
         return connection;
     }
+    public static final String publicHash = "public";
     public String generateOAuthHeader(HttpURLConnection connection) throws IOException, URISyntaxException {
+        System.err.println("SecretHash: "+this.SecretHash);
+        if(this.SecretHash.isEmpty()||this.SecretHash.equals(publicHash)){
+            System.err.println("public Account detected!");
+            return "public";
+        }
+
+
         String res = "realm=\""+connection.getURL().toString()+"\","+
                 "oauth_consumer_key=\""+username+"\","+
                 "oauth_token=\"\","+
@@ -254,6 +262,7 @@ public class Session {
         System.err.println(signatur);
         return signatur;
     }
+//Copyright for SignaturBaseString class(I made some modifications to replace some of the functions normally provided by some of his other classes. All credit goes to atthias Kaeppler):
 /*
  * Copyright (c) 2009 Matthias Kaeppler Licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except in compliance
@@ -264,8 +273,6 @@ public class Session {
  * KIND, either express or implied. See the License for the specific language
  * governing permissions and limitations under the License.
  */
-
-
 
 
     private class SignatureBaseString {
@@ -358,7 +365,7 @@ class ApiFuction{
         this.name = name;
     }
     public JSONObject execute(Session session) throws Exception {
-        HttpURLConnection connection = session.createSecuredConnection(Session.baseUrl+name);
+        HttpURLConnection connection = session.createConnection(Session.baseUrl+name);
         configureConnection(connection);
         session.generateOAuthHeader(connection);
         connect(connection);
@@ -370,12 +377,17 @@ class ApiFuction{
         }
         buff = new byte[connection.getContentLength()];
         connection.getInputStream().read(buff);
-        String json = new String(buff);
+        String rawData = new String(buff);
         JSONObject data = null;
         try {
-            data = new JSONObject(json.substring(json.indexOf('{')));
-        }catch(Exception e){
-            throw new Exception("Failed to parse json form message: "+json);
+            String json = rawData.substring(rawData.indexOf('{'));
+            try {
+                data = new JSONObject(json);
+            }catch(Exception e){
+                throw new Exception("Failed to parse json form message: "+json);
+            }
+        }catch (StringIndexOutOfBoundsException e){
+            new Exception("Failed to parse message "+rawData+", because it is to short (message is"+rawData.length()+" min Length is 3)",e).printStackTrace();
         }
         connection.disconnect();
         return data;

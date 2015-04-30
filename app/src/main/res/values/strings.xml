@@ -19,5 +19,7 @@
     <string name="cancel">Cancel</string>
     <string name="emptyNews">No News found</string>
     <string name="guest">Guest (Click Here to Login)</string>
+    <string name="publicUser">Public Account</string>
+
 
 </resources>

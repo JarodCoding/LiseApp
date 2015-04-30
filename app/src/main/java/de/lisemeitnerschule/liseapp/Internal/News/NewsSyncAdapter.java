@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -66,7 +65,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
             String authToken = AccountManager.get(context).blockingGetAuthToken(account,"",true);
             Session session = Session.instance(account.name,authToken);
 
-            JSONArray news = requestNews(session, getLastUpdated(context));
+            JSONArray news = requestNews(session, getLastUpdated(context,account));
             if(news != null) {
                 JSONObject current;
                 for (int i = 0; i < news.length(); i++) {
@@ -97,7 +96,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                         provider.delete(Uri.withAppendedPath(InternalContract.News.CONTENT_URI, current.getString("uid")), null, null);
                     }
                 }
-                updateLastUpdated(context);
+                updateLastUpdated(context,account);
             }
 
 
@@ -134,8 +133,8 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                                     try {
                                         return Picasso.with(context).load(new File(context.getCacheDir(),"/images/"+values.getAsString(InternalContract.News.Image)))
                                                 .resize(200, 200)
-                                                .placeholder(R.drawable.ic_drawer)
-                                                .error(R.drawable.ic_drawer)
+                                                .placeholder(R.drawable.ic_launcher)
+                                                .error(R.drawable.ic_launcher)
                                                 .get();
                                     } catch (IOException e) {
                                         e.printStackTrace();
@@ -180,14 +179,14 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
     //retriving
 
         //Last Updated
-            public static long getLastUpdated(Context context){
+            public static long getLastUpdated(Context context,Account account){
                 SharedPreferences settings = context.getSharedPreferences("LiseNetworkData", 0);
-                return settings.getLong("NewsLastUpdate",0);
+                return settings.getLong("NewsLastUpdate"+account.name,0);
             }
 
-            public static void updateLastUpdated(Context context){
+            public static void updateLastUpdated(Context context,Account account){
                 SharedPreferences settings = context.getSharedPreferences("LiseNetworkData", 0);
-                settings.edit().putLong("NewsLastUpdate",System.currentTimeMillis()).commit();
+                settings.edit().putLong("NewsLastUpdate"+account.name,System.currentTimeMillis()/1000L).commit();
             }
 
 
@@ -196,6 +195,7 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                 JSONArray arr = null;
                 try {
                     JSONObject object = session.apiRequest("news",new String[]{String.valueOf(timestamp)});
+                    if(object == null)return  null;
                     arr = object.toJSONArray(object.names());
 
                 } catch (Exception e) {
@@ -215,8 +215,9 @@ public class NewsSyncAdapter extends AbstractThreadedSyncAdapter {
                             if(rawNews.length()==1){
                                 return false;
                             }
-                            if(rawNews.getString("image")!=null)
-                                rawNews.put("image", downloadImage(rawNews.getString("image"), context));
+                            String image = rawNews.getString("image");
+                            if(image!=null&&!image.isEmpty()&&!image.equals("null"))
+                                rawNews.put("image", downloadImage(image, context));
 
                             //teaser
                             parseTeaser(rawNews.getString("teaser"));

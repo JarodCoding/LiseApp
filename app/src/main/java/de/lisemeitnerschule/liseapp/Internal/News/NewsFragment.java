@@ -23,6 +23,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +35,7 @@ import de.lisemeitnerschule.liseapp.BaseFragment;
 import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.R;
 import de.lisemeitnerschule.liseapp.Search;
+import de.lisemeitnerschule.liseapp.Utils.SpacesItemDecoration;
 
 
 public class NewsFragment extends BaseFragment {
@@ -42,7 +44,6 @@ public class NewsFragment extends BaseFragment {
     public static NewsFragment newInstance(ActionBarActivity activity) {
 
         NewsFragment fragment = new NewsFragment();
-        fragment.setRetainInstance(true);
         return fragment;
     }
 
@@ -79,6 +80,11 @@ public class NewsFragment extends BaseFragment {
         adapter.swapCursor(cursor);
         return null;
     }
+
+
+    public static final String backStack = "News";
+
+
     private SwipeRefreshLayout refreshLayout;
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -86,10 +92,13 @@ public class NewsFragment extends BaseFragment {
         RecyclerView recList = (RecyclerView) view.findViewById(R.id.cardList);
         recList.setHasFixedSize(false);
         recList.setEnabled(true);
+        DisplayMetrics displayMetrics = getActivity().getApplication().getResources().getDisplayMetrics();
+        int paddingX = Math.round(8 * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
+        int paddingY = Math.round(8 * (displayMetrics.ydpi / DisplayMetrics.DENSITY_DEFAULT));
+        recList.addItemDecoration(new SpacesItemDecoration(paddingX,paddingY));
         LinearLayoutManager llm = new LinearLayoutManager(view.getContext());
         llm.setOrientation(LinearLayoutManager.VERTICAL);
         recList.setLayoutManager(llm);
-
         adapter = new NewsAdapter(getActivity());
         recList.setAdapter(adapter);
         refreshLayout = (SwipeRefreshLayout) view.findViewById(R.id.swipeRefreshLayout);

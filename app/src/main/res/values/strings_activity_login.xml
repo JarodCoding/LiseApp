@@ -6,9 +6,9 @@
 
     <string name="prompt_username">Username</string>
     <string name="prompt_password">Password</string>
-    <string name="action_sign_in">Confirm<b> > </b></string>
+    <string name="action_sign_in">Confirm  &lt;b&gt;>&lt;/b&gt;</string>
     <string name="action_sign_in_short">Confirm</string>
-    <string name="skip">Skip<b>  > </b></string>
+    <string name="skip">Skip  &lt;b&gt;>&lt;/b&gt;</string>
 
     <string name="error_invalid_username">This username is invalid</string>
     <string name="error_incorrect_password">This password is incorrect</string>

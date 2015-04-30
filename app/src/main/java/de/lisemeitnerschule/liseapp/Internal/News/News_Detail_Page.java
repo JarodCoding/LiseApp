@@ -1,7 +1,6 @@
 package de.lisemeitnerschule.liseapp.Internal.News;
 
 import android.app.Activity;
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -13,21 +12,23 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.Transformation;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.bluejamesbond.text.DocumentView;
 import com.bluejamesbond.text.IDocumentLayout;
 
+import de.lisemeitnerschule.liseapp.BaseFragment;
 import de.lisemeitnerschule.liseapp.R;
+import de.lisemeitnerschule.liseapp.Search;
 import de.lisemeitnerschule.liseapp.Utils.CompPathInterpolator;
 
-public class News_Detail_Page extends android.support.v4.app.Fragment {
+public class News_Detail_Page extends BaseFragment {
     public Activity activity;
     public static News_Detail_Page newInstance(Activity activity,NewsDetails details) {
 
         News_Detail_Page fragment = new News_Detail_Page();
-        fragment.setRetainInstance(true);
         fragment.activity = activity;
         fragment.news     = details    ;
         return fragment;
@@ -38,27 +39,41 @@ public class News_Detail_Page extends android.support.v4.app.Fragment {
         super.onCreate(savedInstanceState);
     }
 
+    //TODO: show News search and pop back
+    @Override
+    public boolean usesCustomSearch() {
+        return super.usesCustomSearch();
+    }
 
+    @Override
+    public Search displaySearch(boolean visible) {
+        return super.displaySearch(visible);
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         ScrollView view = new ScrollView(container.getContext());
-        Resources r = getResources();
         DisplayMetrics displayMetrics = getActivity().getApplication().getResources().getDisplayMetrics();
 
         int paddingX = Math.round(8 * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
         int paddingY = Math.round(8 * (displayMetrics.ydpi / DisplayMetrics.DENSITY_DEFAULT));
-
         view.setPadding(paddingX,paddingY,paddingX,paddingY);
         View newView = LayoutInflater.from(container.getContext()).inflate(R.layout.news_card,container,false);
         TextView Title = (TextView) newView.findViewById(R.id.NewsTitle);
             Title.setText(news.title);
-        ImageView Picture = (ImageView)newView.findViewById(R.id.NewsPicture);
+        if(news.Image != null) {
+            ImageView Picture = (ImageView) newView.findViewById(R.id.NewsPicture);
             Picture.setImageDrawable(news.Image);
+            RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            layoutParams.addRule(RelativeLayout.ALIGN_LEFT, Picture.getId());
+            layoutParams.addRule(RelativeLayout.ALIGN_BOTTOM, Picture.getId());
+            Title.setLayoutParams(layoutParams);
+            view.invalidate();
+        }
         DocumentView Teaser = (DocumentView) newView.findViewById(R.id.NewsTeaser);
             Teaser.setText(news.Teaser);
-        DocumentView Body = (DocumentView) newView.findViewById(R.id.NewsBody);
+        //DocumentView Body = (DocumentView) newView.findViewById(R.id.NewsBody);
             Body.setText(news.Text);
             Body.setVisibility(View.INVISIBLE);
 
@@ -67,16 +82,25 @@ public class News_Detail_Page extends android.support.v4.app.Fragment {
 
     }
 
+    @Override
+    public void onDestroyView() {
+
+
+       animation = new ExpandCollapseAnimation(Body, 150, false, getActivity());
+       Body.startAnimation(animation);
+       super.onDestroyView();
+    }
+    private DocumentView Body;
     private Animation animation;
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        final DocumentView Body = (DocumentView) view.findViewById(R.id.NewsBody);
+        //Body = (DocumentView) view.findViewById(R.id.NewsBody);
         Body.post(new Runnable() {
 
             @Override
             public void run() {
-                animation = new ExpandCollapseAnimation(Body, 150, 0,getActivity());
+                animation = new ExpandCollapseAnimation(Body, 150, true, getActivity());
 
                 Body.startAnimation(animation);
             }
@@ -86,6 +110,8 @@ public class News_Detail_Page extends android.support.v4.app.Fragment {
        // view.findViewById(R.id.NewsBody).setVisibility(View.VISIBLE);
     }
 }
+
+
 class NewsDetails{
     public String    title;
     public Long      Date;
@@ -102,7 +128,7 @@ class NewsDetails{
 class ExpandCollapseAnimation extends Animation {
     private View mAnimatedView;
     private int mEndHeight;
-    private int mType;
+    private boolean mType;
     /**
      * This methode can be used to calculate the height and set it for views with wrap_content as height.
      * This should be done before ExpandCollapseAnimation is created.
@@ -122,6 +148,7 @@ class ExpandCollapseAnimation extends Animation {
         return view.getMeasuredHeight();
 
     }
+
     public static int getHeightForWrapContent(Activity activity, DocumentView view) {
         view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
         view.getLayout().measure(new IDocumentLayout.IProgress<Float>() {
@@ -137,6 +164,7 @@ class ExpandCollapseAnimation extends Animation {
         });
         return view.getLayout().getMeasuredHeight();
     }
+
     /**
      * Initializes expand collapse animation, has two types, collapse (1) and expand (0).
      * @param view The view to animate
@@ -144,28 +172,28 @@ class ExpandCollapseAnimation extends Animation {
      * @param type The type of animation: 0 will expand from gone and 0 size to visible and layout size defined in xml.
      * 1 will collapse view and set to gone
      */
-    public ExpandCollapseAnimation(View view, int duration, int type,Activity activity) {
+    public ExpandCollapseAnimation(View view, int duration, boolean type,Activity activity) {
         setDuration(duration);
         mAnimatedView = view;
         mEndHeight = getHeightForWrapContent(activity,view);
         setInterpolator(new CompPathInterpolator(0.4f,0.f,0.2f,1f));
         System.err.println(mEndHeight);
         mType = type;
-        if(mType == 0) {
+        if(mType) {
             view.getLayoutParams().height = 0;
             view.setVisibility(View.VISIBLE);
 
         }
     }
 
-    public ExpandCollapseAnimation(DocumentView view, int duration, int type,Activity activity) {
+    public ExpandCollapseAnimation(DocumentView view, int duration, boolean open,Activity activity) {
         setDuration(duration);
         mAnimatedView = view;
         mEndHeight = getHeightForWrapContent(activity, view);
         System.err.println(mEndHeight);
         setInterpolator(new CompPathInterpolator(0.4f,0.f,0.2f,1f));
-        mType = type;
-        if(mType == 0) {
+        mType = open;
+        if(mType) {
             view.getLayoutParams().height = 0;
             view.setVisibility(View.VISIBLE);
         }
@@ -174,14 +202,14 @@ class ExpandCollapseAnimation extends Animation {
     protected void applyTransformation(float interpolatedTime, Transformation t) {
         super.applyTransformation(interpolatedTime, t);
         if (interpolatedTime < 1.0f) {
-            if(mType == 0) {
+            if(mType) {
                 mAnimatedView.getLayoutParams().height = (int) (mEndHeight * interpolatedTime);
             } else {
                 mAnimatedView.getLayoutParams().height = mEndHeight - (int) (mEndHeight * interpolatedTime);
             }
             mAnimatedView.requestLayout();
         } else {
-            if(mType == 0) {
+            if(mType) {
                 mAnimatedView.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
                 mAnimatedView.requestLayout();
             } else {

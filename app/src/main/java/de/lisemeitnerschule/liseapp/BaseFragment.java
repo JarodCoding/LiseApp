@@ -50,6 +50,7 @@ public abstract class BaseFragment extends Fragment{
         return null;
     }
 
+
 }
 
 class DefaultSearch implements Search{

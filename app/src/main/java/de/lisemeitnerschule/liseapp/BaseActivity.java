@@ -1,11 +1,8 @@
 package de.lisemeitnerschule.liseapp;
 
-import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
-import android.content.ContentProviderClient;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -14,7 +11,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.RemoteException;
 import android.os.SystemClock;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -35,7 +31,6 @@ import android.widget.TextView;
 
 import java.lang.reflect.Field;
 
-import de.lisemeitnerschule.liseapp.Internal.InternalContract;
 import de.lisemeitnerschule.liseapp.Internal.News.NewsFragment;
 import de.lisemeitnerschule.liseapp.Network.Security.Authenticator;
 
@@ -297,7 +292,7 @@ public class BaseActivity extends ActionBarActivity
         SharedPreferences settings = getSharedPreferences(MainPrefs, 0);
 
         if (settings.getBoolean("first_time", true)) {
-
+            LiseApp.introduction(this);
             settings.edit().putBoolean("first_time", false).commit();
         }
     }
@@ -306,11 +301,16 @@ public class BaseActivity extends ActionBarActivity
     public void onNavigationDrawerItemSelected(int position) {
         switch (position){
             case 0:
-                getFragmentManager().beginTransaction().replace(R.id.container, NewsFragment.newInstance(this)).commit();
+                getFragmentManager().beginTransaction().replace(R.id.container, NewsFragment.newInstance(this)).addToBackStack(null).commit();
 
         }
 
-        ;
+
+    }
+
+    @Override
+    public void onDrawerCreate() {
+        getFragmentManager().beginTransaction().add(R.id.container,NewsFragment.newInstance(this)).addToBackStack(null).commit();
     }
 
 

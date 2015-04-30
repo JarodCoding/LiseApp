@@ -12,6 +12,9 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.Html;
+import android.text.Spanned;
+import android.text.SpannedString;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
@@ -46,7 +49,10 @@ public class Login extends ActionBarActivity {
     private View     mLoginFormView ;
     private String   AccountType    ;
     private String   oldAccountName ;
-    private CharSequence cancleButtonText;
+    private String   cancleButtonText;
+    private Spanned cancleButtonSpannable;
+    private Spanned confrimButtonSpannable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +89,7 @@ public class Login extends ActionBarActivity {
         mUsernameSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(mUsernameSignInButton.getText().toString().equals(cancleButtonText))finish();
                 attemptLogin();
             }
         });
@@ -97,12 +104,16 @@ public class Login extends ActionBarActivity {
             mUsernameView.setText(oldAccountName);
             setTitle(R.string.modify_title);
         }
+        confrimButtonSpannable = Html.fromHtml(getString(R.string.action_sign_in));
+
         if(getIntent().hasExtra(PARAM_CANCEL_TEXT)){
-            cancleButtonText = getIntent().getCharSequenceExtra(PARAM_CANCEL_TEXT);
+            cancleButtonText = getIntent().getStringExtra(PARAM_CANCEL_TEXT);
+            cancleButtonSpannable = Html.fromHtml(cancleButtonText);
         }else{
-            cancleButtonText = getText(R.string.cancel);
+            cancleButtonText = getString(R.string.cancel);
+            cancleButtonSpannable = new SpannedString(cancleButtonText);
         }
-        mUsernameSignInButton.setText(cancleButtonText);
+        mUsernameSignInButton.setText(cancleButtonSpannable);
 
         TextWatcher CancelListener = new TextWatcher() {
                 @Override
@@ -118,9 +129,9 @@ public class Login extends ActionBarActivity {
                 @Override
                 public void afterTextChanged(Editable s) {
                     if (mUsernameView.getText().toString().isEmpty() || mPasswordView.getText().toString().isEmpty()) {
-                        mUsernameSignInButton.setText(cancleButtonText);
+                        mUsernameSignInButton.setText(cancleButtonSpannable);
                     } else {
-                        mUsernameSignInButton.setText(getString(R.string.action_sign_in));
+                        mUsernameSignInButton.setText(confrimButtonSpannable);
 
                     }
                 }
@@ -167,7 +178,7 @@ public class Login extends ActionBarActivity {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(username, password,this);
+            mAuthTask = new UserLoginTask(username, password);
             mAuthTask.execute((Void) null);
         }
     }
@@ -234,20 +245,15 @@ public class Login extends ActionBarActivity {
 
 
 
-    /**
-     * Represents an asynchronous login/registration task used to authenticate
-     * the user.
-     */
+
     public class UserLoginTask extends AsyncTask<Void, Void, Intent> {
 
         private final String mUsername;
         private final String mPassword;
-        private final Login parent;
 
-        UserLoginTask(String username, String password,Login parent) {
+        UserLoginTask(String username, String password) {
             mUsername = username;
             mPassword = password;
-            this.parent = parent;
         }
 
         @Override
